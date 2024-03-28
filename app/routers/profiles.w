@@ -68,7 +68,7 @@ pub class Profiles extends base.Base {
         let var user = getUserByUsername(token.id, req.vars.get("username"));
 
         if user.get("following").asNum() == 0 {
-          db.execute(
+          db.execute2(
             "INSERT INTO user_follow (user_id, follow_id) VALUES (:userId, :followId)",
             {
               userId: token.id,
@@ -109,7 +109,7 @@ pub class Profiles extends base.Base {
         let var user = getUserByUsername(token.id, req.vars.get("username"));
 
         if user.get("following").asNum() == 1 {
-          db.execute(
+          db.execute2(
             "DELETE FROM user_follow WHERE user_id = :userId AND follow_id = :followId",
             {
               userId: token.id,

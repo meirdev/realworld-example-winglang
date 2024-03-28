@@ -139,3 +139,7 @@ pub struct UserDb {
   bio: str;
   image: str;
 }
+
+pub struct ProfileDb extends UserDb {
+  following: bool;
+}
