@@ -3,6 +3,11 @@ bring util;
 
 bring jwt;
 
+pub struct Token {
+  id: num;
+  username: str;
+}
+
 pub class Auth {
   pub static inflight getSecret(): str {
     return util.tryEnv("SECRET") ?? "123456";
@@ -12,11 +17,11 @@ pub class Auth {
     return util.sha256(Auth.getSecret() + password);
   }
 
-  pub static inflight signToken(data: Json): str {
+  pub static inflight signToken(data: Token): str {
     return jwt.sign(data, Auth.getSecret());
   }
 
-  pub static inflight verifyToken(req: cloud.ApiRequest): Json {
+  pub static inflight verifyToken(req: cloud.ApiRequest): Token {
     let var authorization = "";
 
     if req.headers?.has("Authorization") == true {
@@ -33,6 +38,6 @@ pub class Auth {
 
     let token = authorization.substring("Token ".length);
 
-    return jwt.verify(token, secret: Auth.getSecret());
+    return Token.fromJson(jwt.verify(token, secret: Auth.getSecret()));
   }
 }

@@ -5,6 +5,7 @@ bring "../libs" as libs;
 bring "../schemas.w" as schemas;
 
 struct ArticleFilter {
+  userId: str?;
   slug: str?;
   tag: str?;
   author: str?;
@@ -51,7 +52,7 @@ pub class Articles extends base.Base {
       }
     };
 
-    let getArticles = inflight (userId: str, filter: ArticleFilter?) => {
+    let getArticles = inflight (filter: ArticleFilter?): schemas.MultipleArticlesResponse => {
       let var sql = "
       WITH article_list AS (
         SELECT
@@ -94,8 +95,8 @@ pub class Articles extends base.Base {
         sql += " favorited = :favorited ";
       }
 
-      let resultCount = db.execute2(sql, {
-        userId: userId,
+      let resultCount = db.execute2("SELECT COUNT(*) AS count FROM ({sql})", {
+        userId: filter?.userId,
         slug: filter?.slug,
         favorited: filter?.favorited,
         tag: filter?.tag,
@@ -115,7 +116,7 @@ pub class Articles extends base.Base {
       }
 
       let result = db.execute2(sql, {
-        userId: userId,
+        userId: filter?.userId,
         slug: filter?.slug,
         favorited: filter?.favorited,
         tag: filter?.tag,
@@ -124,103 +125,171 @@ pub class Articles extends base.Base {
         offset: filter?.offset,
       });
 
-      return result.rows;
+      let articles = MutArray<schemas.Article>[];
+
+      for row in result.rows {
+        articles.push(
+          schemas.Article {
+            author: {
+              bio: row.get("author").get("bio").asStr(),
+              following: row.get("author").get("following").asNum() == 1,
+              image: row.get("author").get("image").asStr(),
+              username: row.get("author").get("username").asStr(),
+            },
+            body: row.get("body").asStr(),
+            createdAt: row.get("created_at").asStr(),
+            description: row.get("description").asStr(),
+            favorited: row.get("favorited").asNum() == 1,
+            favoritesCount: row.get("favorites_count").asNum(),
+            slug: row.get("slug").asStr(),
+            title: row.get("title").asStr(),
+            updatedAt: row.get("updated_at").asStr(),
+          }
+        );
+      }
+
+      return schemas.MultipleArticlesResponse {
+        articles: unsafeCast(articles),
+        articlesCount: resultCount.rows.at(0).get("count").asNum(),
+      };
     };
 
-    api.get("/api/articles", inflight (req) => {
-      let var response = {};
+    // api.get("/api/articles", inflight (req) => {
+    //   let var response = {};
 
-      try {
-        let token = libs.Auth.verifyToken(req);
+    //   let var userId: str? = nil;
 
-        let articles = MutArray<schemas.Article>[];
+    //   try {
+    //     let token = libs.Auth.verifyToken(req);
 
-        for article in getArticles(
-          token.get("id").asStr(),
-          author: req.query.tryGet("author"),
-          favorited: req.query.tryGet("favorited"),
-          limit: libs.Helpers.parseInt(req.query.tryGet("limit") ?? "20"),
-          offset: libs.Helpers.parseInt(req.query.tryGet("offset") ?? "0"),
-          slug: req.query.tryGet("slug"),
-          tag: req.query.tryGet("tag"),
-        ) {
-          articles.push(
-            schemas.Article {
-              author: {
-                bio: article.get("author").get("bio").asStr(),
-                following: article.get("author").get("following").asNum() == 1,
-                image: article.get("author").get("image").asStr(),
-                username: article.get("author").get("username").asStr(),
-              },
-              body: article.get("body").asStr(),
-              createdAt: article.get("created_at").asStr(),
-              description: article.get("description").asStr(),
-              favorited: article.get("favorited").asNum() == 1,
-              favoritesCount: article.get("favorites_count").asNum(),
-              slug: article.get("slug").asStr(),
-              title: article.get("title").asStr(),
-              updatedAt: article.get("updated_at").asStr(),
-            }
-          );
-        }
+    //     userId = token.get("id").asStr();
+    //   } catch {
+    //   }
 
-        response = schemas.MultipleArticlesResponse {
-          articles: unsafeCast(articles),
-          articlesCount: 0,
-        };
-      } catch error {
-        response = schemas.GenericErrorModel {
-          errors: [{
-            body: error,
-          }],
-        };
-      }
+    //   try {
+    //     response = getArticles(
+    //       userId: userId,
+    //       author: req.query.tryGet("author"),
+    //       favorited: req.query.tryGet("favorited"),
+    //       limit: libs.Helpers.parseInt(req.query.tryGet("limit") ?? "20"),
+    //       offset: libs.Helpers.parseInt(req.query.tryGet("offset") ?? "0"),
+    //       slug: req.query.tryGet("slug"),
+    //       tag: req.query.tryGet("tag"),
+    //     );
+    //   } catch error {
+    //     response = schemas.GenericErrorModel {
+    //       errors: [{
+    //         body: error,
+    //       }],
+    //     };
+    //   }
 
-      return {
-        body: Json.stringify(response),
-      };
-    });
+    //   return {
+    //     body: Json.stringify(response),
+    //   };
+    // });
 
-    api.get("/api/articles/:slug", inflight () => {
-      // slug == feed
-    });
+    // api.get("/api/articles/:slug", inflight (req) => {
+    //   let var response = {};
 
-    api.post("/api/articles", inflight (req) => {
-      let var response = {};
+    //   try {
+    //     let token = libs.Auth.verifyToken(req);
 
-      try {
-        let token = libs.Auth.verifyToken(req);
+    //     let slug = req.vars.get("slug");
 
-        let body = schemas.NewArticleRequest.parseJson(req.body!);
+    //     if slug == "feed" {
+    //       response = getArticles(
+    //         userId: token.get("id").asStr(),
+    //         author: req.query.tryGet("author"),
+    //         favorited: req.query.tryGet("favorited"),
+    //         limit: libs.Helpers.parseInt(req.query.tryGet("limit") ?? "20"),
+    //         offset: libs.Helpers.parseInt(req.query.tryGet("offset") ?? "0"),
+    //         slug: req.query.tryGet("slug"),
+    //         tag: req.query.tryGet("tag"),
+    //       );
+    //     } else {
+    //       let articles = getArticles(
+    //         userId: token.get("id").asStr(),
+    //         slug: slug,
+    //       );
 
-        let result = db.execute(
-          "INSERT INTO articles (slug, title, description, body, author_id) VALUES (?, ?, ?, ?, ?) RETURNING *",
-          slugify(body.article.title),
-          body.article.title,
-          body.article.description,
-          body.article.body,
-          token.get("id").asStr(),
-        );
+    //       if articles.articlesCount == 0 {
+    //         throw "not found";
+    //       }
 
-        let article = result.rows.at(0);
+    //       response = schemas.SingleArticleResponse {
+    //         article: articles.articles.at(0),
+    //       };
+    //     }
+    //   } catch error {
+    //     response = schemas.GenericErrorModel {
+    //       errors: [{
+    //         body: error,
+    //       }],
+    //     };
+    //   }
 
-        updateTags(article.get("id").asNum(), body.article.tagList);
-      } catch error {
-        response = schemas.GenericErrorModel {
-          errors: [{
-            body: error,
-          }],
-        };
-      }
+    //   return {
+    //     body: Json.stringify(response),
+    //   };
+    // });
 
-      return {
-        body: Json.stringify(response),
-      };
-    });
+    // api.post("/api/articles", inflight (req) => {
+    //   let var response = {};
 
-    api.put("/api/articles/:slug", inflight () => {
-      
-    });
+    //   try {
+    //     let token = libs.Auth.verifyToken(req);
+
+    //     let body = schemas.NewArticleRequest.parseJson(req.body!);
+
+    //     let result = db.execute2(
+    //       "INSERT INTO articles (slug, title, description, body, author_id) VALUES (:slug, :title, :description, :body, :author_id) RETURNING *",
+    //       {
+    //         slug: slugify(body.article.title),
+    //         title: body.article.title,
+    //         description: body.article.description,
+    //         body: body.article.body,
+    //         author_id: token.get("id").asStr()
+    //       }
+    //     );
+
+    //     let article = result.rows.at(0);
+
+    //     updateTags(article.get("id").asNum(), body.article.tagList);
+    //   } catch error {
+    //     response = schemas.GenericErrorModel {
+    //       errors: [{
+    //         body: error,
+    //       }],
+    //     };
+    //   }
+
+    //   return {
+    //     body: Json.stringify(response),
+    //   };
+    // });
+
+    // api.put("/api/articles/:slug", inflight (req) => {
+    //   let var response = {};
+
+    //   try {
+    //     let token = libs.Auth.verifyToken(req);
+
+    //     let body = schemas.UpdateArticleRequest.parseJson(req.body!);
+
+
+    //   } catch error {
+    //     response = schemas.GenericErrorModel {
+    //       errors: [{
+    //         body: error,
+    //       }],
+    //     };
+    //   }
+
+    //   return {
+    //     body: Json.stringify(response),
+    //   };
+    // });
 
     api.delete("/api/articles/:slug", inflight () => {
       
@@ -242,45 +311,45 @@ pub class Articles extends base.Base {
     });
 
     api.delete("/api/articles/:slug/favorite", inflight (req) => {
-      let var response = {};
+      // let var response = {};
 
-      try {
-        let token = libs.Auth.verifyToken(req);
+      // try {
+      //   let token = libs.Auth.verifyToken(req);
 
-        let result = db.execute(
-          "DELETE FROM user_article_favorite WHERE user_id = ? AND article_id = (SELECT id FROM articles WHERE slug = ?)",
-          token.get("id").asStr(),
-          req.vars.get("slug"),
-        );
+      //   let result = db.execute(
+      //     "DELETE FROM user_article_favorite WHERE user_id = ? AND article_id = (SELECT id FROM articles WHERE slug = ?)",
+      //     token.get("id").asStr(),
+      //     req.vars.get("slug"),
+      //   );
 
-        if result.rowsAffected != 0 {
-          db.execute(
-            "UPDATE articles SET favorites_count = favorites_count - 1 WHERE slug = ?",
-            req.vars.get("slug"),
-          );
-        }
+      //   if result.rowsAffected != 0 {
+      //     db.execute(
+      //       "UPDATE articles SET favorites_count = favorites_count - 1 WHERE slug = ?",
+      //       req.vars.get("slug"),
+      //     );
+      //   }
 
-        let article = getArticles(token.get("id").asStr(), req.vars.get("slug"));
+      //   let article = getArticles(token.get("id").asStr(), req.vars.get("slug"));
 
-        response = schemas.SingleArticleResponse {
-          article: {
-            username: user.get("username").asStr(),
-            image: user.get("image").asStr(),
-            bio: user.get("bio").asStr(),
-            following: user.get("following").asNum() == 1,
-          }
-        };
-      } catch error {
-        response = schemas.GenericErrorModel {
-          errors: [{
-            body: error,
-          }],
-        };
-      }
+      //   response = schemas.SingleArticleResponse {
+      //     article: {
+      //       username: user.get("username").asStr(),
+      //       image: user.get("image").asStr(),
+      //       bio: user.get("bio").asStr(),
+      //       following: user.get("following").asNum() == 1,
+      //     }
+      //   };
+      // } catch error {
+      //   response = schemas.GenericErrorModel {
+      //     errors: [{
+      //       body: error,
+      //     }],
+      //   };
+      // }
 
-      return {
-        body: Json.stringify(response),
-      };
+      // return {
+      //   body: Json.stringify(response),
+      // };
     });
   }
 }

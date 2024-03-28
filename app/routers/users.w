@@ -9,10 +9,6 @@ pub class Users extends base.Base {
     super(api, db);
 
     let checkUsername = inflight (username: str, exclude: str?) => {
-      if username.length < 3 {
-        throw "username must be at least 3 characters";
-      }
-
       let result = db.execute(
         "SELECT * FROM users WHERE username = ? AND username != ?",
         username,
@@ -143,9 +139,11 @@ pub class Users extends base.Base {
       try {
         let token = libs.Auth.verifyToken(req);
 
-        let result = db.execute(
-          "SELECT * FROM users WHERE id = ?",
-          token.get("id").asStr(),
+        let result = db.execute2(
+          "SELECT * FROM users WHERE id = :id",
+          {
+            id: token.id,
+          },
         );
 
         let user = result.rows.at(0);
@@ -180,9 +178,11 @@ pub class Users extends base.Base {
 
         let body = schemas.UpdateUserRequest.parseJson(req.body!);
 
-        let var result = db.execute(
-          "SELECT * FROM users WHERE id = ?",
-          token.get("id").asStr(),
+        let var result = db.execute2(
+          "SELECT * FROM users WHERE id = :id",
+          {
+            id: token.id,
+          },
         );
 
         let var user = result.rows.at(0);
@@ -224,10 +224,10 @@ pub class Users extends base.Base {
 
         user = result.rows.at(0);
 
-        token = libs.Auth.signToken({
+        token = {
           id: user.get("id").asNum(),
           username: user.get("username").asStr(),
-        });
+        };
 
         response = schemas.UserResponse {
           user: {

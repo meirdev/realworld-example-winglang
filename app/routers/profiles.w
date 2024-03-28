@@ -8,11 +8,19 @@ pub class Profiles extends base.Base {
   new(api: cloud.Api, db: libs.Db) {
     super(api, db);
 
-    let getUserByUsername = inflight (currentUserId: str, username: str) => {
-      let result = db.execute(
-        "SELECT users.*, IIF(user_follow.follow_id IS NULL, false, true) AS following FROM users LEFT JOIN user_follow ON (user_follow.user_id = ?) WHERE username = ?",
-        currentUserId,
-        username,
+    let getUserByUsername = inflight (currentUserId: num, username: str) => {
+      let result = db.execute2(
+        "
+        SELECT
+          users.*,
+          IIF(user_follow.follow_id IS NULL, false, true) AS following
+        FROM users
+        LEFT JOIN user_follow ON (user_follow.user_id = :userId)
+        WHERE username = :username",
+        {
+          userId: currentUserId,
+          username: username,
+        },
       );
 
       if result.rows.length == 0 {
@@ -28,7 +36,7 @@ pub class Profiles extends base.Base {
       try {
         let token = libs.Auth.verifyToken(req);
 
-        let var user = getUserByUsername(token.get("id").asStr(), req.vars.get("username"));
+        let var user = getUserByUsername(token.id, req.vars.get("username"));
 
         response = schemas.ProfileResponse {
           profile: {
@@ -57,17 +65,19 @@ pub class Profiles extends base.Base {
       try {
         let token = libs.Auth.verifyToken(req);
 
-        let var user = getUserByUsername(token.get("id").asStr(), req.vars.get("username"));
+        let var user = getUserByUsername(token.id, req.vars.get("username"));
 
         if user.get("following").asNum() == 0 {
           db.execute(
-            "INSERT INTO user_follow (user_id, follow_id) VALUES (?, ?)",
-            token.get("id").asStr(),
-            user.get("id").asNum(),
+            "INSERT INTO user_follow (user_id, follow_id) VALUES (:userId, :followId)",
+            {
+              userId: token.id,
+              followId: user.get("id").asNum(),
+            },
           );
         }
 
-        user = getUserByUsername(token.get("id").asStr(), req.vars.get("username"));
+        user = getUserByUsername(token.id, req.vars.get("username"));
 
         response = schemas.ProfileResponse {
           profile: {
@@ -96,17 +106,19 @@ pub class Profiles extends base.Base {
       try {
         let token = libs.Auth.verifyToken(req);
 
-        let var user = getUserByUsername(token.get("id").asStr(), req.vars.get("username"));
+        let var user = getUserByUsername(token.id, req.vars.get("username"));
 
         if user.get("following").asNum() == 1 {
           db.execute(
-            "DELETE FROM user_follow WHERE user_id = ? AND follow_id = ?",
-            token.get("id").asStr(),
-            user.get("id").asNum(),
+            "DELETE FROM user_follow WHERE user_id = :userId AND follow_id = :followId",
+            {
+              userId: token.id,
+              followId: user.get("id").asNum(),
+            },
           );
         }
 
-        user = getUserByUsername(token.get("id").asStr(), req.vars.get("username"));
+        user = getUserByUsername(token.id, req.vars.get("username"));
 
         response = schemas.ProfileResponse {
           profile: {
