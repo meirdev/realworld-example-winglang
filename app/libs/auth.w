@@ -33,8 +33,6 @@ pub class Auth {
 
     let token = authorization.substring("Token ".length);
 
-    log("{Json.stringify(token)}");
-
     return jwt.verify(token, secret: Auth.getSecret());
   }
 }

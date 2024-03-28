@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS articles (
   id INTEGER PRIMARY KEY,
   slug TEXT UNIQUE,
-  tilte TEXT,
+  title TEXT,
   description TEXT,
   body TEXT,
   created_at TEXT DEFAULT (strftime('%FT%R:%f', 'now', 'localtime')),
@@ -35,15 +35,18 @@ CREATE TABLE IF NOT EXISTS tags (
 
 CREATE TABLE IF NOT EXISTS user_follow (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  follow_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+  follow_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, follow_id)
 );
 
 CREATE TABLE IF NOT EXISTS user_article_favorite (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE
+  article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, article_id)
 );
 
 CREATE TABLE IF NOT EXISTS article_tag (
   article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
-  tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE
+  tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+  PRIMARY KEY (article_id, tag_id)
 );

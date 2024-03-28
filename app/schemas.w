@@ -75,7 +75,7 @@ pub struct UpdateArticleRequest {
 
 pub struct Article {
   slug: str;
-  tilte: str;
+  title: str;
   description: str;
   body: str;
   tagList: Array<str>?;
