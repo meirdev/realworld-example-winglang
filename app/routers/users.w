@@ -48,29 +48,31 @@ pub class Users extends base.Base {
       try {
         let body = schemas.LoginUserRequest.parseJson(req.body!);
 
-        let result = db.execute(
-          "SELECT * FROM users WHERE email = ? AND password = ?",
-          body.user.email,
-          libs.Auth.hash(body.user.password),
+        let result = db.execute2(
+          "SELECT * FROM users WHERE email = :email AND password = :password",
+          {
+            email: body.user.email,
+            password: libs.Auth.hash(body.user.password),
+          }
         );
 
         if result.rows.length == 0 {
           throw "incorrect email or password";
         }
 
-        let user = result.rows.at(0);
+        let user = schemas.UserDb.fromJson(result.rows.at(0));
 
         let token = libs.Auth.signToken({
-          id: user.get("id").asNum(),
-          username: user.get("username").asStr(),
+          id: user.id,
+          username: user.username,
         });
 
         response = schemas.UserResponse {
           user: {
-            username: user.get("username").asStr(),
-            email: user.get("email").asStr(),
-            bio: user.get("bio").asStr(),
-            image: user.get("image").asStr(),
+            username: user.username,
+            email: user.email,
+            bio: user.bio,
+            image: user.image,
             token: token,
           }
         };
@@ -97,26 +99,28 @@ pub class Users extends base.Base {
         checkUsername(body.user.username);
         checkEmail(body.user.email);
 
-        let result = db.execute(
-          "INSERT INTO users (username, email, password, bio, image) VALUES (?, ?, ?, '', '') RETURNING *",
-          body.user.username,
-          body.user.email,
-          libs.Auth.hash(body.user.password),
+        let result = db.execute2(
+          "INSERT INTO users (username, email, password, bio, image) VALUES (:username, :email, :password, '', '') RETURNING *",
+          {
+            username: body.user.username,
+            email: body.user.email,
+            password: libs.Auth.hash(body.user.password),
+          },
         );
 
-        let user = result.rows.at(0);
+        let user = schemas.UserDb.fromJson(result.rows.at(0));
 
         let token = libs.Auth.signToken({
-          id: user.get("id").asNum(),
-          username: user.get("username").asStr(),
+          id: user.id,
+          username: user.username,
         });
 
         response = schemas.UserResponse {
           user: {
-            username: user.get("username").asStr(),
-            email: user.get("email").asStr(),
-            bio: "",
-            image: "",
+            username: user.username,
+            email: user.email,
+            bio: user.bio,
+            image: user.image,
             token: token,
           }
         };
@@ -146,14 +150,14 @@ pub class Users extends base.Base {
           },
         );
 
-        let user = result.rows.at(0);
+        let user = schemas.UserDb.fromJson(result.rows.at(0));
 
         response = schemas.UserResponse {
           user: {
-            username: user.get("username").asStr(),
-            email: user.get("email").asStr(),
-            bio: "",
-            image: "",
+            username: user.username,
+            email: user.email,
+            bio: user.bio,
+            image: user.image,
             token: libs.Auth.signToken(token),
           }
         };
@@ -185,7 +189,7 @@ pub class Users extends base.Base {
           },
         );
 
-        let var user = result.rows.at(0);
+        let var user = schemas.UserDb.fromJson(result.rows.at(0));
 
         let args = MutMap<str>{};
 
@@ -195,12 +199,12 @@ pub class Users extends base.Base {
         }
 
         if let username = body.user.username {
-          checkUsername(username, user.get("username").asStr());
+          checkUsername(username, user.username);
           args.set("username", username);
         }
 
         if let email = body.user.email {
-          checkEmail(email, user.get("email").asStr());
+          checkEmail(email, user.email);
           args.set("email", email);
         }
 
@@ -212,29 +216,31 @@ pub class Users extends base.Base {
           args.set("image", image);
         }
 
-        result = db.execute(
-          "UPDATE users SET password = ?, username = ?, email = ?, bio = ?, image = ? WHERE id = ? RETURNING *",
-          args.tryGet("password") ?? user.get("password").asStr(),
-          args.tryGet("username") ?? user.get("username").asStr(),
-          args.tryGet("email") ?? user.get("email").asStr(),
-          args.tryGet("bio") ?? user.get("bio").asStr(),
-          args.tryGet("image") ?? user.get("image").asStr(),
-          user.get("id").asNum(),
+        result = db.execute2(
+          "UPDATE users SET password = :password, username = :username, email = :email, bio = :bio, image = :image WHERE id = :id RETURNING *",
+          {
+            password: args.tryGet("password") ?? user.password,
+            username: args.tryGet("username") ?? user.username,
+            email: args.tryGet("email") ?? user.email,
+            bio: args.tryGet("bio") ?? user.bio,
+            image: args.tryGet("image") ?? user.image,
+            id: user.id,
+          },
         );
 
-        user = result.rows.at(0);
+        user = schemas.UserDb.fromJson(result.rows.at(0));
 
         token = {
-          id: user.get("id").asNum(),
-          username: user.get("username").asStr(),
+          id: user.id,
+          username: user.username,
         };
 
         response = schemas.UserResponse {
           user: {
-            username: user.get("username").asStr(),
-            email: user.get("email").asStr(),
-            bio: user.get("bio").asStr(),
-            image: user.get("image").asStr(),
+            username: user.username,
+            email: user.email,
+            bio: user.bio,
+            image: user.image,
             token: libs.Auth.signToken(token),
           }
         };

@@ -130,3 +130,12 @@ pub struct Error {
 pub struct GenericErrorModel {
   errors: Array<Error>;
 }
+
+pub struct UserDb {
+  id: num;
+  username: str;
+  email: str;
+  password: str;
+  bio: str;
+  image: str;
+}
