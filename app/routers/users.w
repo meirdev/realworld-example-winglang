@@ -65,65 +65,63 @@ pub class Users extends base.Base {
     };
 
     api.post("/api/users/login", inflight (req) => {
-      let body = schemas.LoginUserRequest.parseJson(req.body!);
+      return libs.Middleware.loginRequired(false, req, () => {
+        let body = schemas.LoginUserRequest.parseJson(req.body!);
 
-      if let result = db.fetchOne(
-        "SELECT * FROM users WHERE email = :email AND password = :password", {
-          email: body.user.email,
-          password: libs.Auth.hash(body.user.password),
-        },
-      ) {
-        let user = schemas.UserDb.fromJson(result);
+        if let result = db.fetchOne(
+          "SELECT * FROM users WHERE email = :email AND password = :password", {
+            email: body.user.email,
+            password: libs.Auth.hash(body.user.password),
+          },
+        ) {
+          let user = schemas.UserDb.fromJson(result);
 
-        return {
-          body: Json.stringify(userToResponse(user)),
-        };
-      }
+          return userToResponse(user);
+        }
 
-      throw "401: unauthorized";
+        throw "401: unauthorized";
+      });
     });
 
     api.post("/api/users", inflight (req) => {
-      let body = schemas.NewUserRequest.parseJson(req.body!);
+      return libs.Middleware.loginRequired(false, req, () => {
+        let body = schemas.NewUserRequest.parseJson(req.body!);
 
-      checkUsername(body.user.username);
-      checkEmail(body.user.email);
+        checkUsername(body.user.username);
+        checkEmail(body.user.email);
 
-      if let result = db.fetchOne(
-        "
-        INSERT INTO users (username, email, password, bio, image)
-        VALUES (:username, :email, :password, '', '')
-        RETURNING *
-        ",
-        {
-          username: body.user.username,
-          email: body.user.email,
-          password: libs.Auth.hash(body.user.password),
-        },
-      ) {
-        let user = schemas.UserDb.fromJson(result);
+        if let result = db.fetchOne(
+          "
+          INSERT INTO users (username, email, password, bio, image)
+          VALUES (:username, :email, :password, '', '')
+          RETURNING *
+          ",
+          {
+            username: body.user.username,
+            email: body.user.email,
+            password: libs.Auth.hash(body.user.password),
+          },
+        ) {
+          let user = schemas.UserDb.fromJson(result);
 
-        return {
-          body: Json.stringify(userToResponse(user)),
-        };
-      }
+          return userToResponse(user);
+        }
+      });
     });
 
     api.get("/api/user", inflight (req) => {
-      return libs.Auth.loginRequired(req, (token) => {
-        let user = getUser(token.id);
+      return libs.Middleware.loginRequired(true, req, (token) => {
+        let user = getUser(token!.id);
 
-        return {
-          body: Json.stringify(userToResponse(user)),
-        };
+        return userToResponse(user);
       });
     });
 
     api.put("/api/user", inflight (req) => {
-      return libs.Auth.loginRequired(req, (token) => {
+      return libs.Middleware.loginRequired(true, req, (token) => {
         let body = schemas.UpdateUserRequest.parseJson(req.body!);
 
-        let user = getUser(token.id);
+        let user = getUser(token!.id);
 
         if let username = body.user.username {
           checkUsername(username, user.username);
@@ -151,9 +149,7 @@ pub class Users extends base.Base {
         ) {
           let user = schemas.UserDb.fromJson(result);
 
-          return {
-            body: Json.stringify(userToResponse(user)),
-          };
+          return userToResponse(user);
         }
       });
     });
