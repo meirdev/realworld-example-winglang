@@ -78,17 +78,11 @@ pub class Auth {
       } elif req.headers?.has("authorization") == true {
         authorization = req.headers?.get("authorization")!;
       } else {
-        return {
-          status: 403,
-          body: "missing authorization",
-        };
+        throw "missing authorization";
       }
 
       if !authorization.startsWith("Token ") {
-        return {
-          status: 403,
-          body: "invalid authorization",
-        };
+        throw "invalid authorization";
       }
 
       let token = authorization.substring("Token ".length);

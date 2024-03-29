@@ -84,37 +84,37 @@ pub class Articles extends base.Base {
           JOIN article_tag ON (article_tag.article_id = articles.id)
           LEFT JOIN tags ON (tags.id = article_tag.tag_id)
       )
-      SELECT * FROM article_list
+      SELECT * FROM article_list WHERE article_list.id IS NOT NULL 
       ";
 
-      if filter? {
-        sql += " WHERE ";
-      }
+      // if filter? {
+      //   sql += " WHERE article_list.id IS NOT NULL ";
+      // }
 
       if filter?.tag? {
-        sql += " WHERE EXISTS (SELECT 1 FROM json_each(tag_list) WHERE value = ':tag') ";
+        sql += " AND EXISTS (SELECT 1 FROM json_each(tag_list) WHERE value = ':tag') ";
       }
 
       if filter?.slug? {
-        sql += " slug = :slug ";
+        sql += " AND slug = :slug ";
       }
 
       if filter?.author? {
-        sql += " json_extract(author, '$.username') = :author ";
+        sql += " AND json_extract(author, '$.username') = :author ";
       }
 
       if filter?.favorited? {
-        sql += " favorited = :favorited ";
+        sql += " AND favorited = :favorited ";
       }
 
-      let resultCount = db.execute("SELECT COUNT(*) AS count FROM ({sql})", {
-        userId: filter?.userId,
-        slug: filter?.slug,
-        favorited: filter?.favorited,
-        tag: filter?.tag,
-        author: filter?.author,
-        limit: filter?.limit,
-        offset: filter?.offset,
+      let resultCount = db.fetchOne("SELECT COUNT(*) AS count FROM ({sql})", {
+        userId: filter?.userId ?? 0,
+        slug: filter?.slug ?? "",
+        favorited: filter?.favorited ?? "",
+        tag: filter?.tag ?? "",
+        author: filter?.author ?? "",
+        limit: filter?.limit ?? 0,
+        offset: filter?.offset ?? 0,
       });
 
       sql += " ORDER BY id DESC ";
@@ -128,13 +128,13 @@ pub class Articles extends base.Base {
       }
 
       let result = db.fetchAll(sql, {
-        userId: filter?.userId,
-        slug: filter?.slug,
-        favorited: filter?.favorited,
-        tag: filter?.tag,
-        author: filter?.author,
-        limit: filter?.limit,
-        offset: filter?.offset,
+        userId: filter?.userId ?? 0,
+        slug: filter?.slug ?? "",
+        favorited: filter?.favorited ?? "",
+        tag: filter?.tag ?? "",
+        author: filter?.author ?? "",
+        limit: filter?.limit ?? 0,
+        offset: filter?.offset ?? 0,
       });
 
       let articles = MutArray<schemas.Article>[];
@@ -162,7 +162,7 @@ pub class Articles extends base.Base {
 
       return schemas.MultipleArticlesResponse {
         articles: unsafeCast(articles),
-        articlesCount: resultCount.rows.at(0).get("count").asNum(),
+        articlesCount: resultCount?.get("count")?.asNum() ?? 0,
       };
     };
 
