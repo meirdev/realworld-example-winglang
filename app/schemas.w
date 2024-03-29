@@ -78,7 +78,7 @@ pub struct Article {
   title: str;
   description: str;
   body: str;
-  tagList: Array<str>?;
+  tagList: Array<str>;
   createdAt: str;
   updatedAt: str;
   favorited: bool;
@@ -165,9 +165,9 @@ pub struct ArticleDb {
 }
 
 pub struct ArticleFullDb extends ArticleDb {
-  author: ProfileDb;
+  author: str;
   favorited: num; // bool
-  tagList: Array<str>;
+  tag_list: str;
 }
 
 pub struct CommentDb {
@@ -180,5 +180,5 @@ pub struct CommentDb {
 }
 
 pub struct CommentWithProfileDb extends CommentDb {
-  author: ProfileDb;
+  author: str;
 }

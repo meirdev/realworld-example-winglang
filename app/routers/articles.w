@@ -77,19 +77,15 @@ pub class Articles extends base.Base {
             'image', author.image,
             'following', IIF(user_follow.follow_id IS NULL, false, true)
           ) AS author
-          FROM articles
-          LEFT JOIN user_article_favorite ON (user_article_favorite.user_id = articles.id)
-          LEFT JOIN users AS author ON (author.id = articles.author_id)
-          LEFT JOIN user_follow ON (user_follow.user_id = :userId AND user_follow.follow_id = articles.author_id)
-          JOIN article_tag ON (article_tag.article_id = articles.id)
-          LEFT JOIN tags ON (tags.id = article_tag.tag_id)
+        FROM articles
+        LEFT JOIN users AS author ON (author.id = articles.author_id)
+        LEFT JOIN article_tag ON (article_tag.article_id = articles.id)
+        LEFT JOIN tags ON (tags.id = article_tag.tag_id)
+        LEFT JOIN user_article_favorite ON (user_article_favorite.user_id = :userId AND user_article_favorite.article_id = articles.id)
+        LEFT JOIN user_follow ON (user_follow.user_id = :userId AND user_follow.follow_id = articles.author_id)
       )
       SELECT * FROM article_list WHERE article_list.id IS NOT NULL 
       ";
-
-      // if filter? {
-      //   sql += " WHERE article_list.id IS NOT NULL ";
-      // }
 
       if filter?.tag? {
         sql += " AND EXISTS (SELECT 1 FROM json_each(tag_list) WHERE value = ':tag') ";
@@ -140,22 +136,28 @@ pub class Articles extends base.Base {
       let articles = MutArray<schemas.Article>[];
 
       for row in result {
+        let article = schemas.ArticleFullDb.fromJson(row);
+
+        let author = schemas.ProfileDb.parseJson(article.author);
+        let tagList = Json.parse(article.tag_list);
+
         articles.push(
           schemas.Article {
             author: {
-              bio: row.get("author").get("bio").asStr(),
-              following: row.get("author").get("following").asNum() == 1,
-              image: row.get("author").get("image").asStr(),
-              username: row.get("author").get("username").asStr(),
+              bio: author.bio,
+              following: author.following == 1,
+              image: author.image,
+              username: author.username,
             },
-            body: row.get("body").asStr(),
-            createdAt: row.get("created_at").asStr(),
-            description: row.get("description").asStr(),
-            favorited: row.get("favorited").asNum() == 1,
-            favoritesCount: row.get("favorites_count").asNum(),
-            slug: row.get("slug").asStr(),
-            title: row.get("title").asStr(),
-            updatedAt: row.get("updated_at").asStr(),
+            body: article.body,
+            createdAt: article.created_at,
+            description: article.description,
+            favorited: article.favorited == 1,
+            favoritesCount: article.favorites_count,
+            slug: article.slug,
+            title: article.title,
+            updatedAt: article.updated_at,
+            tagList: unsafeCast(tagList),
           }
         );
       }
@@ -195,16 +197,18 @@ pub class Articles extends base.Base {
       for row in result {
         let comment = schemas.CommentWithProfileDb.fromJson(row);
 
+        let author = schemas.ProfileDb.parseJson(comment.author);
+
         comments.push({
           id: comment.id,
           body: comment.body,
           createdAt: comment.created_at,
           updatedAt: comment.updated_at,
           author: {
-            username: comment.author.username,
-            bio: comment.author.bio,
-            image: comment.author.image,
-            following: comment.author.following == 1,
+            username: author.username,
+            bio: author.bio,
+            image: author.image,
+            following: author.following == 1,
           },
         });
       }
@@ -268,7 +272,9 @@ pub class Articles extends base.Base {
         ) {
           let article = schemas.ArticleDb.fromJson(result);
 
-          updateTags(article.id, body.article.tagList);
+          log("{Json.stringify(article)}");
+
+          // updateTags(article.id, body.article.tagList);
 
           let articles = getArticles(slug: article.slug);
 
@@ -279,27 +285,15 @@ pub class Articles extends base.Base {
       });
     });
 
-    // api.put("/api/articles/:slug", inflight (req) => {
-    //   let var response = {};
+    api.put("/api/articles/:slug", inflight (req) => {
+      return libs.Auth.loginRequired(req, (token) => {
+        let slug = req.vars.get("slug");
 
-    //   try {
-    //     let token = libs.Auth.verifyToken(req);
+        let body = schemas.UpdateArticleRequest.parseJson(req.body!);
 
-    //     let body = schemas.UpdateArticleRequest.parseJson(req.body!);
-
-
-    //   } catch error {
-    //     response = schemas.GenericErrorModel {
-    //       errors: [{
-    //         body: error,
-    //       }],
-    //     };
-    //   }
-
-    //   return {
-    //     body: Json.stringify(response),
-    //   };
-    // });
+        return {};
+      });
+    });
 
     api.delete("/api/articles/:slug", inflight (req) => {
       return libs.Auth.loginRequired(req, (token) => {
