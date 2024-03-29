@@ -51,7 +51,7 @@ pub class Articles extends base.Base {
 
           sqls.push(
             {
-              sql: "INSERT INTO article_tag SELECT tags.id AS tag_id, :articleId AS article_id FROM tags WHERE name = :name",
+              sql: "INSERT INTO article_tag (article_id, tag_id) VALUES (:articleId, (SELECT name FROM tags WHERE name = :name))",
               args: {
                 articleId: articleId,
                 name: tag,
@@ -83,6 +83,7 @@ pub class Articles extends base.Base {
         LEFT JOIN tags ON (tags.id = article_tag.tag_id)
         LEFT JOIN user_article_favorite ON (user_article_favorite.user_id = :userId AND user_article_favorite.article_id = articles.id)
         LEFT JOIN user_follow ON (user_follow.user_id = :userId AND user_follow.follow_id = articles.author_id)
+        GROUP BY articles.id
       )
       SELECT * FROM article_list WHERE article_list.id IS NOT NULL 
       ";
@@ -109,7 +110,7 @@ pub class Articles extends base.Base {
         favorited: filter?.favorited ?? "",
         tag: filter?.tag ?? "",
         author: filter?.author ?? "",
-        limit: filter?.limit ?? 0,
+        limit: filter?.limit ?? 20,
         offset: filter?.offset ?? 0,
       });
 
@@ -129,7 +130,7 @@ pub class Articles extends base.Base {
         favorited: filter?.favorited ?? "",
         tag: filter?.tag ?? "",
         author: filter?.author ?? "",
-        limit: filter?.limit ?? 0,
+        limit: filter?.limit ?? 20,
         offset: filter?.offset ?? 0,
       });
 
@@ -276,7 +277,7 @@ pub class Articles extends base.Base {
 
           log("{Json.stringify(article)}");
 
-          // updateTags(article.id, body.article.tagList);
+          updateTags(article.id, body.article.tagList);
 
           let articles = getArticles(slug: article.slug);
 
