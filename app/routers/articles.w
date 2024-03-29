@@ -89,7 +89,7 @@ pub class Articles extends base.Base {
       ";
 
       if filter?.tag? {
-        sql += " AND EXISTS (SELECT 1 FROM json_each(tag_list) WHERE value = ':tag') ";
+        sql += " AND EXISTS (SELECT 1 FROM json_each(tag_list) WHERE value = :tag) ";
       }
 
       if filter?.slug? {
@@ -337,7 +337,9 @@ pub class Articles extends base.Base {
         let comments = getComments(token.id, slug);
 
         return {
-          body: Json.stringify(comments.comments.at(0)),
+          body: Json.stringify(schemas.SingleCommentResponse {
+            comment: comments.comments.at(0)
+          }),
         };
       });
     });
