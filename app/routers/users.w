@@ -36,104 +36,90 @@ pub class Users extends base.Base {
       }
     };
 
-    let checkPassword = inflight (password: str) => {
-      if password.length < 8 {
-        throw "password must be at least 8 characters";
-      }
-    };
-
     api.post("/api/users/login", inflight (req) => {
-      let var response = {};
+      let var body: schemas.LoginUserRequest? = nil;
 
       try {
-        let body = schemas.LoginUserRequest.parseJson(req.body!);
+        body = schemas.LoginUserRequest.parseJson(req.body!);
+      } catch error {
+        return {
+          status: 422,
+          body: error,
+        };
+      }
 
-        let result = db.execute2(
-          "SELECT * FROM users WHERE email = :email AND password = :password",
-          {
-            email: body.user.email,
-            password: libs.Auth.hash(body.user.password),
-          }
-        );
-
-        if result.rows.length == 0 {
-          throw "incorrect email or password";
+      let result = db.execute2(
+        "SELECT * FROM users WHERE email = :email AND password = :password",
+        {
+          email: body!.user.email,
+          password: libs.Auth.hash(body!.user.password),
         }
+      );
 
-        let user = schemas.UserDb.fromJson(result.rows.at(0));
+      if result.rows.length == 0 {
+        return {
+          status: 401,
+          body: "incorrect email or password",
+        };
+      }
 
-        let token = libs.Auth.signToken({
-          id: user.id,
-          username: user.username,
-        });
+      let user = schemas.UserDb.fromJson(result.rows.at(0));
 
-        response = schemas.UserResponse {
+      return {
+        body: Json.stringify(schemas.UserResponse {
           user: {
             username: user.username,
             email: user.email,
             bio: user.bio,
             image: user.image,
-            token: token,
-          }
-        };
-      } catch error {
-        response = schemas.GenericErrorModel {
-          errors: [{
-            body: error,
-          }],
-        };
-      }
-
-      return {
-        body: Json.stringify(response),
+            token: libs.Auth.signToken({
+              id: user.id,
+              username: user.username,
+            }),
+          },
+        }),
       };
     });
 
     api.post("/api/users", inflight (req) => {
-      let var response = {};
+      let var body: schemas.NewUserRequest? = nil;
 
       try {
-        let body = schemas.NewUserRequest.parseJson(req.body!);
+        body = schemas.NewUserRequest.parseJson(req.body!);
 
-        checkPassword(body.user.password);
-        checkUsername(body.user.username);
-        checkEmail(body.user.email);
+        checkUsername(body!.user.username);
+        checkEmail(body!.user.email);
+      } catch error {
+        return {
+          status: 422,
+          body: error,
+        };
+      }
 
-        let result = db.execute2(
-          "INSERT INTO users (username, email, password, bio, image) VALUES (:username, :email, :password, '', '') RETURNING *",
-          {
-            username: body.user.username,
-            email: body.user.email,
-            password: libs.Auth.hash(body.user.password),
-          },
-        );
+      let result = db.execute2(
+        "INSERT INTO users (username, email, password, bio, image) VALUES (:username, :email, :password, '', '') RETURNING *",
+        {
+          username: body!.user.username,
+          email: body!.user.email,
+          password: libs.Auth.hash(body!.user.password),
+        },
+      );
 
-        let user = schemas.UserDb.fromJson(result.rows.at(0));
+      let user = schemas.UserDb.fromJson(result.rows.at(0));
 
-        let token = libs.Auth.signToken({
-          id: user.id,
-          username: user.username,
-        });
-
-        response = schemas.UserResponse {
+      return {
+        body: Json.stringify(schemas.UserResponse {
           user: {
             username: user.username,
             email: user.email,
             bio: user.bio,
             image: user.image,
-            token: token,
-          }
-        };
-      } catch error {
-        response = schemas.GenericErrorModel {
-          errors: [{
-            body: error,
-          }],
-        };
-      }
-
-      return {
-        body: Json.stringify(response),
+            token: libs.Auth.signToken({
+              id: user.id,
+              username: user.username,
+            }),
+          },
+        }),
       };
     });
 
@@ -194,7 +180,6 @@ pub class Users extends base.Base {
         let args = MutMap<str>{};
 
         if let password = body.user.password {
-          checkPassword(password);
           args.set("password", password);
         }
 
