@@ -8,18 +8,18 @@ pub class Tags extends base.Base {
   new(api: cloud.Api, db: libs.Db) {
     super(api, db);
 
-    api.get("/api/tags", inflight () => {
-      let tags = MutArray<str>[];
+    api.get("/api/tags", inflight (req) => {
+      return libs.Middleware.loginRequired(false, req, () => {
+        let tags = MutArray<str>[];
 
-      for row in db.fetchAll("SELECT * FROM tags") {
-        tags.push(schemas.TagDb.fromJson(row).name);
-      }
+        for row in db.fetchAll("SELECT * FROM tags") {
+          tags.push(schemas.TagDb.fromJson(row).name);
+        }
 
-      return {
-        body: Json.stringify(schemas.TagsResponse {
-          tags: unsafeCast(tags),
-        }),
-      };
+        return schemas.TagsResponse {
+          tags: tags.copy(),
+        };
+      });
     });
   }
 }
