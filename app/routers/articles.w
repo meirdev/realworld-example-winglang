@@ -146,7 +146,7 @@ pub class Articles extends base.Base {
         sql += " OFFSET :offset";
       }
 
-      let filter2 = Json {
+      let result = db.fetchAll(sql, {
         userId: filter?.userId ?? 0,
         slug: filter?.slug ?? "",
         favorited: filter?.favorited ?? "",
@@ -154,11 +154,7 @@ pub class Articles extends base.Base {
         author: filter?.author ?? "",
         limit: filter?.limit ?? 20,
         offset: filter?.offset ?? 0,
-      };
-
-      log("sql: {sql}, filter: {Json.stringify(filter2)}");
-
-      let result = db.fetchAll(sql, filter2);
+      });
 
       let articles = MutArray<schemas.Article>[];
 
