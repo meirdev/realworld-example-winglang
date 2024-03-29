@@ -296,7 +296,37 @@ pub class Articles extends base.Base {
 
         let body = schemas.UpdateArticleRequest.parseJson(req.body!);
 
-        return {};
+        if let result = db.fetchOne("SELECT * FROM articles WHERE slug = :slug AND author_id = :userId", {
+          slug: slug,
+          userId: token.id,
+        }) {
+          let article = schemas.ArticleDb.fromJson(result);
+
+          let var newSlug = article.slug;
+
+          if body.article.title? {
+            newSlug = libs.Helpers.slugify(body.article.title!);
+          }
+
+          db.execute("
+          UPDATE articles SET slug = :slug, title = :title, description = :description, body = :body
+          WHERE id = :id
+          ", {
+            slug: newSlug,
+            title: body.article.title ?? article.title,
+            description: body.article.description ?? article.description,
+            body: body.article.body ?? article.body,
+            id: article.id,
+          });
+
+          let articles = getArticles(slug: article.slug);
+
+          return {
+            body: Json.stringify(schemas.SingleArticleResponse {
+              article: articles.articles.at(0),
+            }),
+          };
+        }
       });
     });
 
