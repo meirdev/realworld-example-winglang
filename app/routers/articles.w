@@ -124,7 +124,7 @@ pub class Articles extends base.Base {
         sql += " OFFSET :offset";
       }
 
-      let result = db.fetchAll(sql, {
+      let filter2 = Json {
         userId: filter?.userId ?? 0,
         slug: filter?.slug ?? "",
         favorited: filter?.favorited ?? "",
@@ -132,7 +132,11 @@ pub class Articles extends base.Base {
         author: filter?.author ?? "",
         limit: filter?.limit ?? 20,
         offset: filter?.offset ?? 0,
-      });
+      };
+
+      // log("sql: {sql}, filter: {Json.stringify(filter2)}");
+
+      let result = db.fetchAll(sql, filter2);
 
       let articles = MutArray<schemas.Article>[];
 
@@ -274,8 +278,6 @@ pub class Articles extends base.Base {
           }
         ) {
           let article = schemas.ArticleDb.fromJson(result);
-
-          log("{Json.stringify(article)}");
 
           updateTags(article.id, body.article.tagList);
 
@@ -424,7 +426,7 @@ pub class Articles extends base.Base {
           ],
         );
 
-        let articles = getArticles(slug: slug);
+        let articles = getArticles(slug: slug, userId: token.id);
 
         return {
           body: Json.stringify(schemas.SingleArticleResponse {
@@ -456,7 +458,7 @@ pub class Articles extends base.Base {
           ],
         );
 
-        let articles = getArticles(slug: slug);
+        let articles = getArticles(slug: slug, userId: token.id);
 
         return {
           body: Json.stringify(schemas.SingleArticleResponse {
