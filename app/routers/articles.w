@@ -189,7 +189,7 @@ pub class Articles extends base.Base {
       }
 
       let result = db.fetchAll(sql, {
-        userId: userId,
+        userId: userId ?? 0,
         slug: slug,
       });
 
