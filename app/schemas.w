@@ -164,9 +164,10 @@ pub struct ArticleDb {
   author_id: num;
 }
 
-pub struct ArticleWithProfileAndFavoritedDb extends ArticleDb {
+pub struct ArticleFullDb extends ArticleDb {
   author: ProfileDb;
   favorited: num; // bool
+  tagList: Array<str>;
 }
 
 pub struct CommentDb {

@@ -127,7 +127,7 @@ pub class Articles extends base.Base {
         sql += " OFFSET :offset";
       }
 
-      let result = db.execute(sql, {
+      let result = db.fetchAll(sql, {
         userId: filter?.userId,
         slug: filter?.slug,
         favorited: filter?.favorited,
@@ -139,7 +139,7 @@ pub class Articles extends base.Base {
 
       let articles = MutArray<schemas.Article>[];
 
-      for row in result.rows {
+      for row in result {
         articles.push(
           schemas.Article {
             author: {
@@ -357,10 +357,12 @@ pub class Articles extends base.Base {
 
     api.delete("/api/articles/:slug/comments/:id", inflight (req) => {
       return libs.Auth.loginRequired(req, (token) => {
+        let id = req.vars.get("id");
+
         db.execute(
           "DELETE FROM comments WHERE id = :commentId AND author_id = :userId",
           {
-            commentId: req.vars.get("id"),
+            commentId: id,
             userId: token.id,
           },
         );
