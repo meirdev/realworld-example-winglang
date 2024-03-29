@@ -158,7 +158,7 @@ pub class Articles extends base.Base {
             slug: article.slug,
             title: article.title,
             updatedAt: article.updated_at,
-            tagList: unsafeCast(tagList),
+            tagList: libs.Helpers.sorted(unsafeCast(tagList)),
           }
         );
       }

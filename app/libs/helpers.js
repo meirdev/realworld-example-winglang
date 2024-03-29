@@ -5,6 +5,6 @@ exports.emailValidator = validator.validate;
 
 exports.slugify = slugify;
 
-exports.join = (s, separator) => s.join(separator);
-
 exports.parseInt = parseInt;
+
+exports.sorted = (a) => a.toSorted();
