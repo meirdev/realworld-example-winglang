@@ -23,7 +23,9 @@ pub class Profiles extends base.Base {
       if let result = db.fetchOne(
         "
         SELECT
-          users.*,
+          username,
+          bio,
+          image,
           IIF(user_follow.follow_id IS NULL, false, true) AS following
         FROM users
         LEFT JOIN user_follow ON (user_follow.user_id = :currentUserId)

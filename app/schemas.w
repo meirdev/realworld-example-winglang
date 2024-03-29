@@ -116,7 +116,7 @@ pub struct SingleCommentResponse {
 }
 
 pub struct MultipleCommentsResponse {
-  comment: Array<Comment>;
+  comments: Array<Comment>;
 }
 
 pub struct TagsResponse {
@@ -140,7 +140,10 @@ pub struct UserDb {
   image: str;
 }
 
-pub struct ProfileDb extends UserDb {
+pub struct ProfileDb {
+  username: str;
+  bio: str;
+  image: str;
   following: num;  // bool
 }
 
@@ -161,15 +164,20 @@ pub struct ArticleDb {
   author_id: num;
 }
 
-pub struct ArticleFullDb {
+pub struct ArticleWithProfileAndFavoritedDb extends ArticleDb {
+  author: ProfileDb;
+  favorited: num; // bool
+}
+
+pub struct CommentDb {
   id: num;
-  slug: str;
-  title: str;
-  description: str;
   body: str;
   created_at: str;
   updated_at: str;
-  favorites_count: num;
+  author_id: num;
+  article_id: num;
+}
+
+pub struct CommentWithProfileDb extends CommentDb {
   author: ProfileDb;
-  favorited: num; // bool
 }

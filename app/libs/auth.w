@@ -66,4 +66,36 @@ pub class Auth {
 
     return fn(Token.fromJson(jwt.verify(token, secret: Auth.getSecret())));
   }
+
+  pub static inflight loginNotRequired(req: cloud.ApiRequest, fn: inflight (Token?): cloud.ApiResponse): cloud.ApiResponse {
+    let var token_: Token? = nil;
+
+    try {
+      let var authorization = "";
+
+      if req.headers?.has("Authorization") == true {
+        authorization = req.headers?.get("Authorization")!;
+      } elif req.headers?.has("authorization") == true {
+        authorization = req.headers?.get("authorization")!;
+      } else {
+        return {
+          status: 403,
+          body: "missing authorization",
+        };
+      }
+
+      if !authorization.startsWith("Token ") {
+        return {
+          status: 403,
+          body: "invalid authorization",
+        };
+      }
+
+      let token = authorization.substring("Token ".length);
+
+      return fn(Token.fromJson(jwt.verify(token, secret: Auth.getSecret())));
+    } catch {
+      return fn();
+    }
+  }
 }
