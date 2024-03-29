@@ -148,3 +148,28 @@ pub struct TagDb {
   id: num;
   name: str;
 }
+
+pub struct ArticleDb {
+  id: num;
+  slug: str;
+  title: str;
+  description: str;
+  body: str;
+  created_at: str;
+  updated_at: str;
+  favorites_count: num;
+  author_id: num;
+}
+
+pub struct ArticleFullDb {
+  id: num;
+  slug: str;
+  title: str;
+  description: str;
+  body: str;
+  created_at: str;
+  updated_at: str;
+  favorites_count: num;
+  author: ProfileDb;
+  favorited: num; // bool
+}

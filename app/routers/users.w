@@ -90,7 +90,11 @@ pub class Users extends base.Base {
       checkEmail(body.user.email);
 
       if let result = db.fetchOne(
-        "INSERT INTO users (username, email, password, bio, image) VALUES (:username, :email, :password, '', '') RETURNING *",
+        "
+        INSERT INTO users (username, email, password, bio, image)
+        VALUES (:username, :email, :password, '', '')
+        RETURNING *
+        ",
         {
           username: body.user.username,
           email: body.user.email,
@@ -130,7 +134,12 @@ pub class Users extends base.Base {
         }
 
         if let result = db.fetchOne(
-          "UPDATE users SET password = :password, username = :username, email = :email, bio = :bio, image = :image WHERE id = :id RETURNING *",
+          "
+          UPDATE users
+          SET password = :password, username = :username, email = :email, bio = :bio, image = :image
+          WHERE id = :id
+          RETURNING *
+          ",
           {
             password: body.user.password ?? user.password,
             username: body.user.username ?? user.username,

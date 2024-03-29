@@ -6,7 +6,7 @@ export interface Config {
   readonly url: string;
 }
 export interface Statement {
-  readonly args?: ((readonly (string)[])) | undefined;
+  readonly args?: (Readonly<any>) | undefined;
   readonly sql: string;
 }
 export interface ResultSet {
@@ -17,5 +17,6 @@ export interface ResultSet {
   readonly rowsAffected: number;
 }
 export interface Client$Inflight {
+  readonly batch: (stmt: (readonly (Statement)[])) => Promise<(readonly (ResultSet)[])>;
   readonly execute: (stmt: Statement) => Promise<ResultSet>;
 }

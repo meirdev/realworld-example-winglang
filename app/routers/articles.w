@@ -23,32 +23,36 @@ pub class Articles extends base.Base {
     };
 
     let updateTags = inflight (articleId: num, tagList: Array<str>?) => {
-      db.execute(
-        "DELETE FROM article_tag WHERE article_id = ?",
-        articleId,
-      );
-
       if let tagList = tagList {
-        for tag in tagList {
-          try {
-            let result = db.execute(
-              "INSERT INTO tags (name) VALUES (?) RETURNING *",
-              tag,
-            );
+        let sqls = MutArray<libs.Statement>[
+          {
+            sql: "DELETE FROM article_tag WHERE article_id = :articleId",
+            args: {
+              articleId: articleId,
+            },
+          },
+        ];
 
-            db.execute(
-              "INSERT INTO article_tag (article_id, tag_id) VALUES (?, ?)",
-              articleId,
-              result.lastInsertRowid!
-            );
-          } catch {
-            db.execute(
-              "INSERT INTO article_tag SELECT tags.id AS tag_id, ? AS article_id FROM tags WHERE name = ?",
-              articleId,
-              tag,
-            );
-          }
+        for tag in tagList {
+          db.execute(
+            "INSERT INTO tags (name) VALUES (:name) ON CONFLICT DO NOTHING",
+            {
+              name: tag,
+            },
+          );
+
+          sqls.push(
+            {
+              sql: "INSERT INTO article_tag SELECT tags.id AS tag_id, :articleId AS article_id FROM tags WHERE name = :name",
+              args: {
+                articleId: articleId,
+                name: tag,
+              },
+            },
+          );
         }
+
+        db.batch(unsafeCast(sqls));
       }
     };
 
@@ -95,7 +99,7 @@ pub class Articles extends base.Base {
         sql += " favorited = :favorited ";
       }
 
-      let resultCount = db.execute2("SELECT COUNT(*) AS count FROM ({sql})", {
+      let resultCount = db.execute("SELECT COUNT(*) AS count FROM ({sql})", {
         userId: filter?.userId,
         slug: filter?.slug,
         favorited: filter?.favorited,
@@ -115,7 +119,7 @@ pub class Articles extends base.Base {
         sql += " OFFSET :offset";
       }
 
-      let result = db.execute2(sql, {
+      let result = db.execute(sql, {
         userId: filter?.userId,
         slug: filter?.slug,
         favorited: filter?.favorited,
@@ -234,40 +238,32 @@ pub class Articles extends base.Base {
     //   };
     // });
 
-    // api.post("/api/articles", inflight (req) => {
-    //   let var response = {};
+    api.post("/api/articles", inflight (req) => {
+      return libs.Auth.loginRequired(req, (token) => {
+        let body = schemas.NewArticleRequest.parseJson(req.body!);
 
-    //   try {
-    //     let token = libs.Auth.verifyToken(req);
+        if let result = db.fetchOne(
+          "
+          INSERT INTO articles (slug, title, description, body, author_id)
+          VALUES (:slug, :title, :description, :body, :author_id)
+          RETURNING *
+          ",
+          {
+            slug: libs.Helpers.slugify(body.article.title),
+            title: body.article.title,
+            description: body.article.description,
+            body: body.article.body,
+            author_id: token.id,
+          }
+        ) {
+          let article = schemas.ArticleDb.fromJson(result);
 
-    //     let body = schemas.NewArticleRequest.parseJson(req.body!);
+          updateTags(article.id, body.article.tagList);
 
-    //     let result = db.execute2(
-    //       "INSERT INTO articles (slug, title, description, body, author_id) VALUES (:slug, :title, :description, :body, :author_id) RETURNING *",
-    //       {
-    //         slug: slugify(body.article.title),
-    //         title: body.article.title,
-    //         description: body.article.description,
-    //         body: body.article.body,
-    //         author_id: token.get("id").asStr()
-    //       }
-    //     );
-
-    //     let article = result.rows.at(0);
-
-    //     updateTags(article.get("id").asNum(), body.article.tagList);
-    //   } catch error {
-    //     response = schemas.GenericErrorModel {
-    //       errors: [{
-    //         body: error,
-    //       }],
-    //     };
-    //   }
-
-    //   return {
-    //     body: Json.stringify(response),
-    //   };
-    // });
+          return {};
+        }
+      });
+    });
 
     // api.put("/api/articles/:slug", inflight (req) => {
     //   let var response = {};
@@ -291,8 +287,19 @@ pub class Articles extends base.Base {
     //   };
     // });
 
-    api.delete("/api/articles/:slug", inflight () => {
-      
+    api.delete("/api/articles/:slug", inflight (req) => {
+      return libs.Auth.loginRequired(req, (token) => {
+        db.execute(
+          "DELETE FROM articles WHERE slug = :slug AND author_id = :userId",
+          {
+            slug: req.vars.get("slug"),
+            userId: token.id,
+          },
+        );
+
+        return {
+        };
+      });
     });
 
     api.post("/api/articles/:slug/comments", inflight () => {
@@ -308,6 +315,28 @@ pub class Articles extends base.Base {
     });
 
     api.post("/api/articles/:slug/favorite", inflight (req) => {
+      return libs.Auth.loginRequired(req, (token) => {
+        db.batch(
+          [
+            {
+              sql: "INSERT INTO user_article_favorite (user_id, article_id) VALUES (:userId, (SELECT id FROM articles WHERE slug = :slug))",
+              args: {
+                userId: token.id,
+                slug: req.vars.get("slug"),
+              },
+            },
+            {
+              sql: "UPDATE articles SET favorites_count = favorites_count + 1 WHERE slug = :slug",
+              args: {
+                slug: req.vars.get("slug"),
+              }
+            },
+          ],
+        );
+
+        return {
+        };
+      });
     });
 
     api.delete("/api/articles/:slug/favorite", inflight (req) => {

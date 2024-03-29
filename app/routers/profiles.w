@@ -52,7 +52,9 @@ pub class Profiles extends base.Base {
     api.post("/api/profiles/:username/follow", inflight (req) => {
       return libs.Auth.loginRequired(req, (token) => {
         db.execute(
-          "INSERT INTO user_follow (user_id, follow_id) VALUES (:userId, (SELECT id FROM users WHERE username = :username))",
+          "
+          INSERT INTO user_follow (user_id, follow_id)
+          VALUES (:userId, (SELECT id FROM users WHERE username = :username))",
           {
             userId: token.id,
             username: req.vars.get("username"),
@@ -70,7 +72,9 @@ pub class Profiles extends base.Base {
     api.delete("/api/profiles/:username/follow", inflight (req) => {
       return libs.Auth.loginRequired(req, (token) => {
         db.execute(
-          "DELETE FROM user_follow WHERE user_id = :userId AND follow_id = (SELECT id FROM users WHERE username = :username)",
+          "
+          DELETE FROM user_follow
+          WHERE user_id = :userId AND follow_id = (SELECT id FROM users WHERE username = :username)",
           {
             userId: token.id,
             followId: req.vars.get("username"),
