@@ -141,5 +141,10 @@ pub struct UserDb {
 }
 
 pub struct ProfileDb extends UserDb {
-  following: bool;
+  following: num;  // bool
+}
+
+pub struct TagDb {
+  id: num;
+  name: str;
 }

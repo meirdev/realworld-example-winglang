@@ -311,45 +311,28 @@ pub class Articles extends base.Base {
     });
 
     api.delete("/api/articles/:slug/favorite", inflight (req) => {
-      // let var response = {};
+      return libs.Auth.loginRequired(req, (token) => {
+        db.batch(
+          [
+            {
+              sql: "DELETE FROM user_article_favorite WHERE user_id = :userId AND article_id = (SELECT id FROM articles WHERE slug = :slug)",
+              args: {
+                userId: token.id,
+                slug: req.vars.get("slug"),
+              },
+            },
+            {
+              sql: "UPDATE articles SET favorites_count = favorites_count - 1 WHERE slug = :slug",
+              args: {
+                slug: req.vars.get("slug"),
+              }
+            },
+          ],
+        );
 
-      // try {
-      //   let token = libs.Auth.verifyToken(req);
-
-      //   let result = db.execute(
-      //     "DELETE FROM user_article_favorite WHERE user_id = ? AND article_id = (SELECT id FROM articles WHERE slug = ?)",
-      //     token.get("id").asStr(),
-      //     req.vars.get("slug"),
-      //   );
-
-      //   if result.rowsAffected != 0 {
-      //     db.execute(
-      //       "UPDATE articles SET favorites_count = favorites_count - 1 WHERE slug = ?",
-      //       req.vars.get("slug"),
-      //     );
-      //   }
-
-      //   let article = getArticles(token.get("id").asStr(), req.vars.get("slug"));
-
-      //   response = schemas.SingleArticleResponse {
-      //     article: {
-      //       username: user.get("username").asStr(),
-      //       image: user.get("image").asStr(),
-      //       bio: user.get("bio").asStr(),
-      //       following: user.get("following").asNum() == 1,
-      //     }
-      //   };
-      // } catch error {
-      //   response = schemas.GenericErrorModel {
-      //     errors: [{
-      //       body: error,
-      //     }],
-      //   };
-      // }
-
-      // return {
-      //   body: Json.stringify(response),
-      // };
+        return {
+        };
+      });
     });
   }
 }

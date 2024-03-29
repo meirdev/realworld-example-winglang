@@ -5,7 +5,7 @@ pub struct Config {
 
 pub struct Statement {
   sql: str;
-  args: Array<str>?;
+  args: Json?;
 }
 
 pub struct ResultSet {
@@ -18,6 +18,7 @@ pub struct ResultSet {
 
 pub interface Client {
   inflight execute(stmt: Statement): ResultSet;
+  inflight batch(stmt: Array<Statement>): Array<ResultSet>;
 }
 
 pub class Db {
@@ -35,17 +36,32 @@ pub class Db {
     this.client = Db.createClient(this.config);
   }
 
-  pub inflight execute(sql: str, ...args: Array<Json>): ResultSet {
+  pub inflight execute(sql: str, args: Json?): ResultSet {
     return this.client.execute({
       sql: sql,
       args: unsafeCast(args),
     });
   }
 
-  pub inflight execute2(sql: str, args: Json?): ResultSet {
-    return this.client.execute({
+  pub inflight batch(stmts: Array<Statement>): Array<ResultSet> {
+    return this.client.batch(stmts);
+  }
+
+  pub inflight fetchOne(sql: str, args: Json?): Json? {
+    let result = this.client.execute({
       sql: sql,
       args: unsafeCast(args),
     });
+
+    return result.rows.tryAt(0);
+  }
+
+  pub inflight fetchAll(sql: str, args: Json?): Array<Json> {
+    let result = this.client.execute({
+      sql: sql,
+      args: unsafeCast(args),
+    });
+
+    return result.rows;
   }
 }

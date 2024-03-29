@@ -9,13 +9,13 @@ pub class Users extends base.Base {
     super(api, db);
 
     let checkUsername = inflight (username: str, exclude: str?) => {
-      let result = db.execute(
-        "SELECT * FROM users WHERE username = ? AND username != ?",
-        username,
-        exclude ?? "",
-      );
-
-      if result.rows.length != 0 {
+      if db.fetchOne(
+        "SELECT * FROM users WHERE username = :username AND username != :exclude",
+        {
+          username: username,
+          exclude: exclude ?? "",
+        }
+      )? {
         throw "username is already taken";
       }
     };
@@ -25,221 +25,128 @@ pub class Users extends base.Base {
         throw "invalid email address";
       }
 
-      let result = db.execute(
-        "SELECT * FROM users WHERE email = ? AND email != ?",
-        email,
-        exclude ?? "",
-      );
-
-      if result.rows.length != 0 {
+      if db.fetchOne(
+        "SELECT * FROM users WHERE email = :email AND email != :exclude",
+        {
+          email: email,
+          exclude: exclude ?? "",
+        }
+      )? {
         throw "email already in use";
       }
     };
 
-    api.post("/api/users/login", inflight (req) => {
-      let var body: schemas.LoginUserRequest? = nil;
-
-      try {
-        body = schemas.LoginUserRequest.parseJson(req.body!);
-      } catch error {
-        return {
-          status: 422,
-          body: error,
-        };
-      }
-
-      let result = db.execute2(
-        "SELECT * FROM users WHERE email = :email AND password = :password",
-        {
-          email: body!.user.email,
-          password: libs.Auth.hash(body!.user.password),
-        }
-      );
-
-      if result.rows.length == 0 {
-        return {
-          status: 401,
-          body: "incorrect email or password",
-        };
-      }
-
-      let user = schemas.UserDb.fromJson(result.rows.at(0));
-
-      return {
-        body: Json.stringify(schemas.UserResponse {
-          user: {
+    let userToResponse = inflight (user: schemas.UserDb) => {
+      return schemas.UserResponse {
+        user: {
+          username: user.username,
+          email: user.email,
+          bio: user.bio,
+          image: user.image,
+          token: libs.Auth.signToken({
+            id: user.id,
             username: user.username,
-            email: user.email,
-            bio: user.bio,
-            image: user.image,
-            token: libs.Auth.signToken({
-              id: user.id,
-              username: user.username,
-            }),
-          },
-        }),
+          }),
+        },
       };
+    };
+
+    let getUser = inflight (id: num) => {
+      if let result = db.fetchOne(
+        "SELECT * FROM users WHERE id = :id",
+        {
+          id: id,
+        },
+      ) {
+        return schemas.UserDb.fromJson(result);
+      }
+
+      throw "404: not found";
+    };
+
+    api.post("/api/users/login", inflight (req) => {
+      let body = schemas.LoginUserRequest.parseJson(req.body!);
+
+      if let result = db.fetchOne(
+        "SELECT * FROM users WHERE email = :email AND password = :password", {
+          email: body.user.email,
+          password: libs.Auth.hash(body.user.password),
+        },
+      ) {
+        let user = schemas.UserDb.fromJson(result);
+
+        return {
+          body: Json.stringify(userToResponse(user)),
+        };
+      }
+
+      throw "401: unauthorized";
     });
 
     api.post("/api/users", inflight (req) => {
-      let var body: schemas.NewUserRequest? = nil;
+      let body = schemas.NewUserRequest.parseJson(req.body!);
 
-      try {
-        body = schemas.NewUserRequest.parseJson(req.body!);
+      checkUsername(body.user.username);
+      checkEmail(body.user.email);
 
-        checkUsername(body!.user.username);
-        checkEmail(body!.user.email);
-      } catch error {
-        return {
-          status: 422,
-          body: error,
-        };
-      }
-
-      let result = db.execute2(
+      if let result = db.fetchOne(
         "INSERT INTO users (username, email, password, bio, image) VALUES (:username, :email, :password, '', '') RETURNING *",
         {
-          username: body!.user.username,
-          email: body!.user.email,
-          password: libs.Auth.hash(body!.user.password),
+          username: body.user.username,
+          email: body.user.email,
+          password: libs.Auth.hash(body.user.password),
         },
-      );
+      ) {
+        let user = schemas.UserDb.fromJson(result);
 
-      let user = schemas.UserDb.fromJson(result.rows.at(0));
-
-      return {
-        body: Json.stringify(schemas.UserResponse {
-          user: {
-            username: user.username,
-            email: user.email,
-            bio: user.bio,
-            image: user.image,
-            token: libs.Auth.signToken({
-              id: user.id,
-              username: user.username,
-            }),
-          },
-        }),
-      };
+        return {
+          body: Json.stringify(userToResponse(user)),
+        };
+      }
     });
 
     api.get("/api/user", inflight (req) => {
-      let var response = {};
+      return libs.Auth.loginRequired(req, (token) => {
+        let user = getUser(token.id);
 
-      try {
-        let token = libs.Auth.verifyToken(req);
-
-        let result = db.execute2(
-          "SELECT * FROM users WHERE id = :id",
-          {
-            id: token.id,
-          },
-        );
-
-        let user = schemas.UserDb.fromJson(result.rows.at(0));
-
-        response = schemas.UserResponse {
-          user: {
-            username: user.username,
-            email: user.email,
-            bio: user.bio,
-            image: user.image,
-            token: libs.Auth.signToken(token),
-          }
+        return {
+          body: Json.stringify(userToResponse(user)),
         };
-      } catch error {
-        response = schemas.GenericErrorModel {
-          errors: [{
-            body: error,
-          }],
-        };
-      }
-
-      return {
-        body: Json.stringify(response),
-      };
+      });
     });
 
     api.put("/api/user", inflight (req) => {
-      let var response = {};
-
-      try {
-        let var token = libs.Auth.verifyToken(req);
-
+      return libs.Auth.loginRequired(req, (token) => {
         let body = schemas.UpdateUserRequest.parseJson(req.body!);
 
-        let var result = db.execute2(
-          "SELECT * FROM users WHERE id = :id",
-          {
-            id: token.id,
-          },
-        );
-
-        let var user = schemas.UserDb.fromJson(result.rows.at(0));
-
-        let args = MutMap<str>{};
-
-        if let password = body.user.password {
-          args.set("password", password);
-        }
+        let user = getUser(token.id);
 
         if let username = body.user.username {
           checkUsername(username, user.username);
-          args.set("username", username);
         }
 
         if let email = body.user.email {
           checkEmail(email, user.email);
-          args.set("email", email);
         }
 
-        if let bio = body.user.bio {
-          args.set("bio", bio);
-        }
-
-        if let image = body.user.image {
-          args.set("image", image);
-        }
-
-        result = db.execute2(
+        if let result = db.fetchOne(
           "UPDATE users SET password = :password, username = :username, email = :email, bio = :bio, image = :image WHERE id = :id RETURNING *",
           {
-            password: args.tryGet("password") ?? user.password,
-            username: args.tryGet("username") ?? user.username,
-            email: args.tryGet("email") ?? user.email,
-            bio: args.tryGet("bio") ?? user.bio,
-            image: args.tryGet("image") ?? user.image,
+            password: body.user.password ?? user.password,
+            username: body.user.username ?? user.username,
+            email: body.user.email ?? user.email,
+            bio: body.user.bio ?? user.bio,
+            image: body.user.image ?? user.image,
             id: user.id,
           },
-        );
+        ) {
+          let user = schemas.UserDb.fromJson(result);
 
-        user = schemas.UserDb.fromJson(result.rows.at(0));
-
-        token = {
-          id: user.id,
-          username: user.username,
-        };
-
-        response = schemas.UserResponse {
-          user: {
-            username: user.username,
-            email: user.email,
-            bio: user.bio,
-            image: user.image,
-            token: libs.Auth.signToken(token),
-          }
-        };
-      } catch error {
-        response = schemas.GenericErrorModel {
-          errors: [{
-            body: error,
-          }],
-        };
-      }
-
-      return {
-        body: Json.stringify(response),
-      };
+          return {
+            body: Json.stringify(userToResponse(user)),
+          };
+        }
+      });
     });
   }
 }
