@@ -179,7 +179,7 @@ pub class Articles extends base.Base {
           'following', IIF(user_follow.follow_id IS NULL, false, true)
         ) AS author
       FROM comments
-      LEFT JOIN users AS author ON (users.id = comments.author_id)
+      LEFT JOIN users AS author ON (author.id = comments.author_id)
       LEFT JOIN user_follow ON (user_follow.user_id = :userId AND user_follow.follow_id = comments.author_id)
       ";
 
@@ -246,7 +246,9 @@ pub class Articles extends base.Base {
           }
 
           return {
-            body: Json.stringify(articles.articles.at(0)),
+            body: Json.stringify(schemas.SingleArticleResponse {
+              article: articles.articles.at(0),
+            }),
           };
         }
       });
@@ -279,7 +281,9 @@ pub class Articles extends base.Base {
           let articles = getArticles(slug: article.slug);
 
           return {
-            body: Json.stringify(articles.articles.at(0)),
+            body: Json.stringify(schemas.SingleArticleResponse {
+              article: articles.articles.at(0),
+            }),
           };
         }
       });
@@ -390,7 +394,9 @@ pub class Articles extends base.Base {
         let articles = getArticles(slug: slug);
 
         return {
-          body: Json.stringify(articles.articles.at(0)),
+          body: Json.stringify(schemas.SingleArticleResponse {
+            article: articles.articles.at(0),
+          }),
         };
       });
     });
@@ -420,7 +426,9 @@ pub class Articles extends base.Base {
         let articles = getArticles(slug: slug);
 
         return {
-          body: Json.stringify(articles.articles.at(0)),
+          body: Json.stringify(schemas.SingleArticleResponse {
+            article: articles.articles.at(0),
+          }),
         };
       });
     });

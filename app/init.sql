@@ -13,16 +13,16 @@ CREATE TABLE IF NOT EXISTS articles (
   title TEXT,
   description TEXT,
   body TEXT,
-  created_at TEXT DEFAULT (strftime('%FT%R:%f', 'now', 'localtime')),
-  updated_at TEXT DEFAULT (strftime('%FT%R:%f', 'now', 'localtime')),
+  created_at TEXT DEFAULT (strftime('%FT%R:%fZ', 'now', 'localtime')),
+  updated_at TEXT DEFAULT (strftime('%FT%R:%fZ', 'now', 'localtime')),
   favorites_count INTEGER DEFAULT 0,
   author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS comments (
   id INTEGER PRIMARY KEY,
-  created_at TEXT DEFAULT (strftime('%FT%R:%f', 'now', 'localtime')),
-  updated_at TEXT DEFAULT (strftime('%FT%R:%f', 'now', 'localtime')),
+  created_at TEXT DEFAULT (strftime('%FT%R:%fZ', 'now', 'localtime')),
+  updated_at TEXT DEFAULT (strftime('%FT%R:%fZ', 'now', 'localtime')),
   body TEXT,
   author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE
