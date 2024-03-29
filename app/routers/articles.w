@@ -51,7 +51,7 @@ pub class Articles extends base.Base {
 
           sqls.push(
             {
-              sql: "INSERT INTO article_tag (article_id, tag_id) VALUES (:articleId, (SELECT name FROM tags WHERE name = :name))",
+              sql: "INSERT INTO article_tag (article_id, tag_id) VALUES (:articleId, (SELECT id FROM tags WHERE name = :name))",
               args: {
                 articleId: articleId,
                 name: tag,
