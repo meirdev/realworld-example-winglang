@@ -32,5 +32,5 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-app/node_modules
-app/target
+backend/node_modules
+backend/target
