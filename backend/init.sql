@@ -66,7 +66,6 @@ CREATE VIEW IF NOT EXISTS articles_view AS
   LEFT JOIN tags ON (tags.id = article_tag.tag_id)
   GROUP BY articles.id
 
-
 CREATE VIEW IF NOT EXISTS comments_view AS
   SELECT
     *,
