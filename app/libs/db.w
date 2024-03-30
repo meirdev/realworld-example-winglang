@@ -48,20 +48,10 @@ pub class Db {
   }
 
   pub inflight fetchOne(sql: str, args: Json?): Json? {
-    let result = this.client.execute({
-      sql: sql,
-      args: unsafeCast(args),
-    });
-
-    return result.rows.tryAt(0);
+    return this.execute(sql, args).rows.tryAt(0);
   }
 
   pub inflight fetchAll(sql: str, args: Json?): Array<Json> {
-    let result = this.client.execute({
-      sql: sql,
-      args: unsafeCast(args),
-    });
-
-    return result.rows;
+    return this.execute(sql, args).rows;
   }
 }
