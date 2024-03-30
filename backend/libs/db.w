@@ -18,6 +18,7 @@ pub struct ResultSet {
 
 pub interface Client {
   inflight execute(stmt: Statement): ResultSet;
+  inflight executeMultiple(sql: str): void;
   inflight batch(stmt: Array<Statement>): Array<ResultSet>;
 }
 
@@ -41,6 +42,10 @@ pub class Db {
       sql: sql,
       args: args ?? {},
     });
+  }
+
+  pub inflight executeMultiple(sql: str) {
+    this.client.executeMultiple(sql);
   }
 
   pub inflight batch(stmts: Array<Statement>): Array<ResultSet> {

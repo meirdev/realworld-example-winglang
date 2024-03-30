@@ -19,4 +19,5 @@ export interface ResultSet {
 export interface Client$Inflight {
   readonly batch: (stmt: (readonly (Statement)[])) => Promise<(readonly (ResultSet)[])>;
   readonly execute: (stmt: Statement) => Promise<ResultSet>;
+  readonly executeMultiple: (sql: string) => Promise<void>;
 }
