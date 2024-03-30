@@ -37,3 +37,7 @@ jobs:
 
       - name: Install
         run: npm ci
+        working-directory: ./backend
+      
+      - name: Run test
+        run: ./test.sh
