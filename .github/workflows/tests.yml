@@ -30,7 +30,8 @@ jobs:
         with:
           node-version: 20.11.0
           cache: npm
-
+          cache-dependency-path: 'backend/package-lock.json'
+          
       - name: Install Wing
         run: npm i -g winglang
 
