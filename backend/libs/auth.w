@@ -10,7 +10,7 @@ pub struct Token {
 
 pub class Auth {
   pub static inflight getSecret(): str {
-    return util.tryEnv("SECRET") ?? "123456";
+    return util.tryEnv("REALWORLD_SECRET") ?? "123456";
   }
 
   pub static inflight hash(password: str): str {
