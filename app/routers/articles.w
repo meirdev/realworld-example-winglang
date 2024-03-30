@@ -281,7 +281,7 @@ pub class Articles extends base.Base {
           }
 
           db.execute("
-          UPDATE articles SET slug = :slug, title = :title, description = :description, body = :body
+          UPDATE articles SET slug = :slug, title = :title, description = :description, body = :body, updated_at = strftime('%FT%R:%fZ', 'now', 'localtime')
           WHERE id = :id
           ", {
             slug: newSlug,
