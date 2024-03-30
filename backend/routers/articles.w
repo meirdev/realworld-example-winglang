@@ -60,7 +60,7 @@ pub class Articles extends base.Base {
           );
         }
 
-        db.batch(unsafeCast(sqls));
+        db.batch(sqls.copy());
       }
     };
 
@@ -76,51 +76,45 @@ pub class Articles extends base.Base {
       WHERE true
       ";
 
+      let sqlArgs = MutJson {
+        userId: filter?.userId ?? 0,
+      };
+
       if filter?.tag? {
         sql += " AND EXISTS (SELECT 1 FROM json_each(tag_list) WHERE value = :tag) ";
+        sqlArgs.set("tag", filter?.tag!);
       }
 
       if filter?.slug? {
         sql += " AND slug = :slug ";
+        sqlArgs.set("slug", filter?.slug!);
       }
 
       if filter?.author? {
         sql += " AND json_extract(author, '$.username') = :author ";
+        sqlArgs.set("author", filter?.author!);
       }
 
       if filter?.favorited? {
         sql += " AND EXISTS (SELECT 1 FROM user_article_favorite WHERE user_id = (SELECT id FROM users WHERE username = :favorited) AND article_id = articles_view.id)";
+        sqlArgs.set("favorited", filter?.favorited!);
       }
 
-      let resultCount = db.fetchOne("SELECT COUNT(*) AS count FROM ({sql})", {
-        userId: filter?.userId ?? 0,
-        slug: filter?.slug ?? "",
-        favorited: filter?.favorited ?? "",
-        tag: filter?.tag ?? "",
-        author: filter?.author ?? "",
-        limit: filter?.limit ?? 20,
-        offset: filter?.offset ?? 0,
-      });
+      let resultCount = db.fetchOne("SELECT COUNT(*) AS count FROM ({sql})", sqlArgs);
 
       sql += " ORDER BY id DESC ";
 
       if filter?.limit? {
         sql += " LIMIT :limit";
+        sqlArgs.set("limit", filter?.limit!);
       }
 
       if filter?.offset? {
         sql += " OFFSET :offset";
+        sqlArgs.set("offset", filter?.offset!);
       }
 
-      let result = db.fetchAll(sql, {
-        userId: filter?.userId ?? 0,
-        slug: filter?.slug ?? "",
-        favorited: filter?.favorited ?? "",
-        tag: filter?.tag ?? "",
-        author: filter?.author ?? "",
-        limit: filter?.limit ?? 20,
-        offset: filter?.offset ?? 0,
-      });
+      let result = db.fetchAll(sql, sqlArgs);
 
       let articles = MutArray<schemas.Article>[];
 
@@ -178,14 +172,16 @@ pub class Articles extends base.Base {
       LEFT JOIN user_follow ON (user_follow.user_id = :userId AND user_follow.follow_id = comments_view.author_id)
       ";
 
+      let sqlArgs = MutJson {
+        userId: userId ?? 0,
+      };
+
       if slug? {
         sql += " WHERE article_id = (SELECT id FROM articles WHERE slug = :slug) ";
+        sqlArgs.set("slug", slug!);
       }
 
-      let result = db.fetchAll(sql, {
-        userId: userId ?? 0,
-        slug: slug,
-      });
+      let result = db.fetchAll(sql, sqlArgs);
 
       let comments = MutArray<schemas.Comment>[];
 
@@ -281,7 +277,8 @@ pub class Articles extends base.Base {
           }
 
           db.execute("
-          UPDATE articles SET slug = :slug, title = :title, description = :description, body = :body, updated_at = strftime('%FT%R:%fZ', 'now', 'localtime')
+          UPDATE articles 
+          SET slug = :slug, title = :title, description = :description, body = :body, updated_at = strftime('%FT%R:%fZ', 'now', 'localtime')
           WHERE id = :id
           ", {
             slug: newSlug,
