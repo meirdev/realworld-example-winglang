@@ -39,7 +39,7 @@ pub class Db {
   pub inflight execute(sql: str, args: Json?): ResultSet {
     return this.client.execute({
       sql: sql,
-      args: unsafeCast(args),
+      args: args ?? {},
     });
   }
 
