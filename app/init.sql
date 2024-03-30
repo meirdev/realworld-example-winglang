@@ -50,3 +50,30 @@ CREATE TABLE IF NOT EXISTS article_tag (
   tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
   PRIMARY KEY (article_id, tag_id)
 );
+
+CREATE VIEW IF NOT EXISTS articles_view AS
+  SELECT
+    articles.*,
+    json_group_array(tags.name) as tag_list,
+    json_object(
+      'username', author.username,
+      'bio', author.bio,
+      'image', author.image
+    ) AS author_
+  FROM articles
+  LEFT JOIN users AS author ON (author.id = articles.author_id)
+  LEFT JOIN article_tag ON (article_tag.article_id = articles.id)
+  LEFT JOIN tags ON (tags.id = article_tag.tag_id)
+  GROUP BY articles.id
+
+
+CREATE VIEW IF NOT EXISTS comments_view AS
+  SELECT
+    *,
+    json_object(
+      'username', author.username,
+      'bio', author.bio,
+      'image', author.image
+    ) AS author_
+  FROM comments
+  LEFT JOIN users AS author ON (author.id = comments.author_id)

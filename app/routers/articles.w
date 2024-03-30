@@ -66,26 +66,14 @@ pub class Articles extends base.Base {
 
     let getArticles = inflight (filter: ArticleFilter?): schemas.MultipleArticlesResponse => {
       let var sql = "
-      WITH article_list AS (
-        SELECT
-          articles.*,
-          IIF(user_article_favorite.user_id IS NULL, false, true) AS favorited,
-          json_group_array(tags.name) as tag_list,
-          json_object(
-            'username', author.username,
-            'bio', author.bio,
-            'image', author.image,
-            'following', IIF(user_follow.follow_id IS NULL, false, true)
-          ) AS author
-        FROM articles
-        LEFT JOIN users AS author ON (author.id = articles.author_id)
-        LEFT JOIN article_tag ON (article_tag.article_id = articles.id)
-        LEFT JOIN tags ON (tags.id = article_tag.tag_id)
-        LEFT JOIN user_article_favorite ON (user_article_favorite.user_id = :userId AND user_article_favorite.article_id = articles.id)
-        LEFT JOIN user_follow ON (user_follow.user_id = :userId AND user_follow.follow_id = articles.author_id)
-        GROUP BY articles.id
-      )
-      SELECT * FROM article_list WHERE article_list.id IS NOT NULL
+      SELECT
+        *,
+        IIF(user_article_favorite.user_id IS NULL, false, true) AS favorited,
+        json_patch(author_, json_object('following', IIF(user_follow.follow_id IS NULL, false, true))) AS author
+      FROM articles_view
+      LEFT JOIN user_article_favorite ON (user_article_favorite.user_id = :userId AND user_article_favorite.article_id = articles_view.id)
+      LEFT JOIN user_follow ON (user_follow.user_id = :userId AND user_follow.follow_id = articles_view.author_id)
+      WHERE true
       ";
 
       if filter?.tag? {
@@ -191,19 +179,25 @@ pub class Articles extends base.Base {
       };
     };
 
+    let getArticle = inflight (userId: num?, slug: str?) => {
+      let articles = getArticles(userId: userId, slug: slug);
+
+      if articles.articles.length == 0 {
+        throw "404: article not found";
+      }
+
+      return schemas.SingleArticleResponse {
+        article: articles.articles.at(0),
+      };
+    };
+
     let getComments = inflight (userId: num?, slug: str?): schemas.MultipleCommentsResponse=> {
       let var sql = "
       SELECT
         *,
-        json_object(
-          'username', author.username,
-          'bio', author.bio,
-          'image', author.image,
-          'following', IIF(user_follow.follow_id IS NULL, false, true)
-        ) AS author
-      FROM comments
-      LEFT JOIN users AS author ON (author.id = comments.author_id)
-      LEFT JOIN user_follow ON (user_follow.user_id = :userId AND user_follow.follow_id = comments.author_id)
+        json_patch(author_, json_object('following', IIF(user_follow.follow_id IS NULL, false, true))) AS author
+      FROM comments_view
+      LEFT JOIN user_follow ON (user_follow.user_id = :userId AND user_follow.follow_id = comments_view.author_id)
       ";
 
       if slug? {
