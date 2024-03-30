@@ -89,29 +89,7 @@ pub class Articles extends base.Base {
       }
 
       if filter?.favorited? {
-        sql = "
-        WITH article_list AS (
-          SELECT
-            articles.*,
-            IIF(user_article_favorite.user_id IS NULL, false, true) AS favorited,
-            json_group_array(tags.name) as tag_list,
-            json_object(
-              'username', author.username,
-              'bio', author.bio,
-              'image', author.image,
-              'following', IIF(user_follow.follow_id IS NULL, false, true)
-            ) AS author
-          FROM articles
-          LEFT JOIN users AS author ON (author.id = articles.author_id)
-          LEFT JOIN article_tag ON (article_tag.article_id = articles.id)
-          LEFT JOIN tags ON (tags.id = article_tag.tag_id)
-          LEFT JOIN user_article_favorite ON (user_article_favorite.user_id = (SELECT id FROM users WHERE username = :favorited) AND user_article_favorite.article_id = articles.id)
-          LEFT JOIN user_follow ON (user_follow.user_id = :userId AND user_follow.follow_id = articles.author_id)
-          GROUP BY articles.id
-        )
-        SELECT * FROM article_list WHERE article_list.id IS NOT NULL
-        ";
-        sql += " AND favorited = 1 ";
+        sql += " AND EXISTS (SELECT 1 FROM user_article_favorite WHERE user_id = (SELECT id FROM users WHERE username = :favorited) AND article_id = articles_view.id)";
       }
 
       let resultCount = db.fetchOne("SELECT COUNT(*) AS count FROM ({sql})", {
@@ -249,15 +227,7 @@ pub class Articles extends base.Base {
         if slug == "feed" {
           return getArticles(newArticleFilter(req.query, userId));
         } else {
-          let articles = getArticles(userId: userId, slug: slug);
-
-          if articles.articlesCount == 0 {
-            throw "404: not found";
-          }
-
-          return schemas.SingleArticleResponse {
-            article: articles.articles.at(0),
-          };
+          return getArticle(userId, slug);
         }
       });
     });
@@ -286,11 +256,7 @@ pub class Articles extends base.Base {
 
           updateTags(article.id, body.article.tagList);
 
-          let articles = getArticles(slug: article.slug);
-
-          return schemas.SingleArticleResponse {
-            article: articles.articles.at(0),
-          };
+          return getArticle(nil, article.slug);
         }
       });
     });
@@ -325,11 +291,7 @@ pub class Articles extends base.Base {
             id: article.id,
           });
 
-          let articles = getArticles(slug: article.slug);
-
-          return schemas.SingleArticleResponse {
-            article: articles.articles.at(0),
-          };
+          return getArticle(nil, article.slug);
         }
       });
     });
@@ -426,11 +388,7 @@ pub class Articles extends base.Base {
           ],
         );
 
-        let articles = getArticles(slug: slug, userId: userId);
-
-        return schemas.SingleArticleResponse {
-          article: articles.articles.at(0),
-        };
+        return getArticle(userId, slug);
       });
     });
 
@@ -457,11 +415,7 @@ pub class Articles extends base.Base {
           ],
         );
 
-        let articles = getArticles(slug: slug, userId: userId);
-
-        return schemas.SingleArticleResponse {
-          article: articles.articles.at(0),
-        };
+        return getArticle(userId, slug);
       });
     });
   }
