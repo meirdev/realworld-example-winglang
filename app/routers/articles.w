@@ -242,43 +242,36 @@ pub class Articles extends base.Base {
     };
 
     api.get("/api/articles", inflight (req) => {
-      return libs.Auth.loginNotRequired(req, (token) => {
-        let articles = getArticles(newArticleFilter(req.query, token?.id));
-
-        return {
-          body: Json.stringify(articles),
-        };
+      return libs.Middleware.loginRequired(false, req, (token) => {
+        return getArticles(newArticleFilter(req.query, token?.id));
       });
     });
 
     api.get("/api/articles/:slug", inflight (req) => {
-      return libs.Auth.loginRequired(req, (token) => {
+      return libs.Middleware.loginRequired(true, req, (token) => {
+        let userId = token!.id;
         let slug = req.vars.get("slug");
 
         if slug == "feed" {
-          let articles = getArticles(newArticleFilter(req.query, token.id));
-
-          return {
-            body: Json.stringify(articles),
-          };
+          return getArticles(newArticleFilter(req.query, userId));
         } else {
-          let articles = getArticles(userId: token.id, slug: slug);
+          let articles = getArticles(userId: userId, slug: slug);
 
           if articles.articlesCount == 0 {
             throw "404: not found";
           }
 
-          return {
-            body: Json.stringify(schemas.SingleArticleResponse {
-              article: articles.articles.at(0),
-            }),
+          return schemas.SingleArticleResponse {
+            article: articles.articles.at(0),
           };
         }
       });
     });
 
     api.post("/api/articles", inflight (req) => {
-      return libs.Auth.loginRequired(req, (token) => {
+      return libs.Middleware.loginRequired(true, req, (token) => {
+        let userId = token!.id;
+
         let body = schemas.NewArticleRequest.parseJson(req.body!);
 
         if let result = db.fetchOne(
@@ -292,7 +285,7 @@ pub class Articles extends base.Base {
             title: body.article.title,
             description: body.article.description,
             body: body.article.body,
-            author_id: token.id,
+            author_id: userId,
           }
         ) {
           let article = schemas.ArticleDb.fromJson(result);
@@ -301,24 +294,23 @@ pub class Articles extends base.Base {
 
           let articles = getArticles(slug: article.slug);
 
-          return {
-            body: Json.stringify(schemas.SingleArticleResponse {
-              article: articles.articles.at(0),
-            }),
+          return schemas.SingleArticleResponse {
+            article: articles.articles.at(0),
           };
         }
       });
     });
 
     api.put("/api/articles/:slug", inflight (req) => {
-      return libs.Auth.loginRequired(req, (token) => {
+      return libs.Middleware.loginRequired(true, req, (token) => {
+        let userId = token!.id;
         let slug = req.vars.get("slug");
 
         let body = schemas.UpdateArticleRequest.parseJson(req.body!);
 
         if let result = db.fetchOne("SELECT * FROM articles WHERE slug = :slug AND author_id = :userId", {
           slug: slug,
-          userId: token.id,
+          userId: userId,
         }) {
           let article = schemas.ArticleDb.fromJson(result);
 
@@ -341,24 +333,23 @@ pub class Articles extends base.Base {
 
           let articles = getArticles(slug: article.slug);
 
-          return {
-            body: Json.stringify(schemas.SingleArticleResponse {
-              article: articles.articles.at(0),
-            }),
+          return schemas.SingleArticleResponse {
+            article: articles.articles.at(0),
           };
         }
       });
     });
 
     api.delete("/api/articles/:slug", inflight (req) => {
-      return libs.Auth.loginRequired(req, (token) => {
+      return libs.Middleware.loginRequired(true, req, (token) => {
+        let userId = token!.id;
         let slug = req.vars.get("slug");
 
         db.execute(
           "DELETE FROM articles WHERE slug = :slug AND author_id = :userId",
           {
             slug: slug,
-            userId: token.id,
+            userId: userId,
           },
         );
 
@@ -367,7 +358,8 @@ pub class Articles extends base.Base {
     });
 
     api.post("/api/articles/:slug/comments", inflight (req) => {
-      return libs.Auth.loginRequired(req, (token) => {
+      return libs.Middleware.loginRequired(true, req, (token) => {
+        let userId = token!.id;
         let slug = req.vars.get("slug");
 
         let body = schemas.NewCommentRequest.parseJson(req.body!);
@@ -380,41 +372,36 @@ pub class Articles extends base.Base {
           {
             body: body.comment.body,
             slug: slug,
-            userId: token.id,
+            userId: userId,
           },
         );
 
-        let comments = getComments(token.id, slug);
+        let comments = getComments(userId, slug);
 
-        return {
-          body: Json.stringify(schemas.SingleCommentResponse {
-            comment: comments.comments.at(0)
-          }),
+        return schemas.SingleCommentResponse {
+          comment: comments.comments.at(0)
         };
       });
     });
 
     api.get("/api/articles/:slug/comments", inflight (req) => {
-      return libs.Auth.loginNotRequired(req, (token) => {
+      return libs.Middleware.loginRequired(false, req, (token) => {
         let slug = req.vars.get("slug");
 
-        let comments = getComments(token?.id, slug);
-
-        return {
-          body: Json.stringify(comments),
-        };
+        return getComments(token?.id, slug);
       });
     });
 
     api.delete("/api/articles/:slug/comments/:id", inflight (req) => {
-      return libs.Auth.loginRequired(req, (token) => {
+      return libs.Middleware.loginRequired(true, req, (token) => {
+        let userId = token!.id;
         let id = req.vars.get("id");
 
         db.execute(
           "DELETE FROM comments WHERE id = :commentId AND author_id = :userId",
           {
             commentId: id,
-            userId: token.id,
+            userId: userId,
           },
         );
 
@@ -423,7 +410,8 @@ pub class Articles extends base.Base {
     });
 
     api.post("/api/articles/:slug/favorite", inflight (req) => {
-      return libs.Auth.loginRequired(req, (token) => {
+      return libs.Middleware.loginRequired(true, req, (token) => {
+        let userId = token!.id;
         let slug = req.vars.get("slug");
 
         db.batch(
@@ -431,7 +419,7 @@ pub class Articles extends base.Base {
             {
               sql: "INSERT INTO user_article_favorite (user_id, article_id) VALUES (:userId, (SELECT id FROM articles WHERE slug = :slug))",
               args: {
-                userId: token.id,
+                userId: userId,
                 slug: slug,
               },
             },
@@ -444,18 +432,17 @@ pub class Articles extends base.Base {
           ],
         );
 
-        let articles = getArticles(slug: slug, userId: token.id);
+        let articles = getArticles(slug: slug, userId: userId);
 
-        return {
-          body: Json.stringify(schemas.SingleArticleResponse {
-            article: articles.articles.at(0),
-          }),
+        return schemas.SingleArticleResponse {
+          article: articles.articles.at(0),
         };
       });
     });
 
     api.delete("/api/articles/:slug/favorite", inflight (req) => {
-      return libs.Auth.loginRequired(req, (token) => {
+      return libs.Middleware.loginRequired(true, req, (token) => {
+        let userId = token!.id;
         let slug = req.vars.get("slug");
 
         db.batch(
@@ -463,7 +450,7 @@ pub class Articles extends base.Base {
             {
               sql: "DELETE FROM user_article_favorite WHERE user_id = :userId AND article_id = (SELECT id FROM articles WHERE slug = :slug)",
               args: {
-                userId: token.id,
+                userId: userId,
                 slug: slug,
               },
             },
@@ -476,12 +463,10 @@ pub class Articles extends base.Base {
           ],
         );
 
-        let articles = getArticles(slug: slug, userId: token.id);
+        let articles = getArticles(slug: slug, userId: userId);
 
-        return {
-          body: Json.stringify(schemas.SingleArticleResponse {
-            article: articles.articles.at(0),
-          }),
+        return schemas.SingleArticleResponse {
+          article: articles.articles.at(0),
         };
       });
     });
