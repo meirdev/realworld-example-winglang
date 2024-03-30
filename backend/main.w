@@ -22,13 +22,8 @@ new routers.Profiles(api, database);
 new routers.Tags(api, database);
 new routers.Users(api, database);
 
-// test "POST /api/users/login" {
-//   let data = Json.stringify({
-//     "user":{
-//       "email": "jake@jake.jake",
-//       "password": "jakejake"
-//     }
-//   });
+test "demo" {
+  let response = http.get("{api.url}/api/articles");
 
-//   let response = http.post(api.url, body: data);
-// }
+  assert(response.status == 200);
+}
