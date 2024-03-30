@@ -42,19 +42,19 @@ pub class Profiles extends base.Base {
     };
 
     api.get("/api/profiles/:username", inflight (req) => {
-      return libs.Auth.loginRequired(req, (token) => {
+      return libs.Middleware.loginRequired(true, req, (token) => {
+        let userId = token!.id;
         let username = req.vars.get("username");
 
-        let profile = getProfile(token.id, username);
+        let profile = getProfile(userId, username);
 
-        return {
-          body: Json.stringify(profileToResponse(profile)),
-        };
+        return profileToResponse(profile);
       });
     });
 
     api.post("/api/profiles/:username/follow", inflight (req) => {
-      return libs.Auth.loginRequired(req, (token) => {
+      return libs.Middleware.loginRequired(true, req, (token) => {
+        let userId = token!.id;
         let username = req.vars.get("username");
 
         db.execute(
@@ -62,21 +62,20 @@ pub class Profiles extends base.Base {
           INSERT INTO user_follow (user_id, follow_id)
           VALUES (:userId, (SELECT id FROM users WHERE username = :username))",
           {
-            userId: token.id,
+            userId: userId,
             username: username,
           },
         );
 
-        let profile = getProfile(token.id, username);
+        let profile = getProfile(userId, username);
 
-        return {
-          body: Json.stringify(profileToResponse(profile)),
-        };
+        return profileToResponse(profile);
       });
     });
 
     api.delete("/api/profiles/:username/follow", inflight (req) => {
-      return libs.Auth.loginRequired(req, (token) => {
+      return libs.Middleware.loginRequired(true, req, (token) => {
+        let userId = token!.id;
         let username = req.vars.get("username");
 
         db.execute(
@@ -84,16 +83,14 @@ pub class Profiles extends base.Base {
           DELETE FROM user_follow
           WHERE user_id = :userId AND follow_id = (SELECT id FROM users WHERE username = :username)",
           {
-            userId: token.id,
+            userId: userId,
             username: username,
           },
         );
 
-        let profile = getProfile(token.id, username);
+        let profile = getProfile(userId, username);
 
-        return {
-          body: Json.stringify(profileToResponse(profile)),
-        };
+        return profileToResponse(profile);
       });
     });
   }
