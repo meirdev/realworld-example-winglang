@@ -15,9 +15,10 @@ For more information on how to this works with other frontends/backends, head ov
 
 # How it works
 
-> Describe the general architecture of your app here
+[Wing](https://www.winglang.io/) + [libSQL](https://docs.turso.tech/libsql)
+
+![schema-diagram](./schema.svg)
 
 # Getting started
 
-> npm install, npm start, etc.
-
+`wing it main.w`

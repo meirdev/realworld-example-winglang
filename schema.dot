@@ -1,0 +1,250 @@
+
+digraph structs {
+
+
+rankdir="LR"
+
+
+node [shape=none]
+
+article_tag [label=<
+            <TABLE BORDER="0" CELLSPACING="0" CELLBORDER="1">
+                <TR>
+                    <TD COLSPAN="2"><B>article_tag</B></TD>
+                </TR>
+            
+                <TR>
+                    <TD PORT="article_id_to">🔑</TD>
+                    <TD PORT="article_id_from">article_id</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="tag_id_to">🔑</TD>
+                    <TD PORT="tag_id_from">tag_id</TD>
+                </TR>
+            
+            </TABLE>
+        >];
+        
+articles [label=<
+            <TABLE BORDER="0" CELLSPACING="0" CELLBORDER="1">
+                <TR>
+                    <TD COLSPAN="2"><B>articles</B></TD>
+                </TR>
+            
+                <TR>
+                    <TD PORT="id_to">🔑</TD>
+                    <TD PORT="id_from">id</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="slug_to">&nbsp;</TD>
+                    <TD PORT="slug_from">slug</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="title_to">&nbsp;</TD>
+                    <TD PORT="title_from">title</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="description_to">&nbsp;</TD>
+                    <TD PORT="description_from">description</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="body_to">&nbsp;</TD>
+                    <TD PORT="body_from">body</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="created_at_to">&nbsp;</TD>
+                    <TD PORT="created_at_from">created_at</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="updated_at_to">&nbsp;</TD>
+                    <TD PORT="updated_at_from">updated_at</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="favorites_count_to">&nbsp;</TD>
+                    <TD PORT="favorites_count_from">favorites_count</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="author_id_to">&nbsp;</TD>
+                    <TD PORT="author_id_from">author_id</TD>
+                </TR>
+            
+            </TABLE>
+        >];
+        
+comments [label=<
+            <TABLE BORDER="0" CELLSPACING="0" CELLBORDER="1">
+                <TR>
+                    <TD COLSPAN="2"><B>comments</B></TD>
+                </TR>
+            
+                <TR>
+                    <TD PORT="id_to">🔑</TD>
+                    <TD PORT="id_from">id</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="created_at_to">&nbsp;</TD>
+                    <TD PORT="created_at_from">created_at</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="updated_at_to">&nbsp;</TD>
+                    <TD PORT="updated_at_from">updated_at</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="body_to">&nbsp;</TD>
+                    <TD PORT="body_from">body</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="author_id_to">&nbsp;</TD>
+                    <TD PORT="author_id_from">author_id</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="article_id_to">&nbsp;</TD>
+                    <TD PORT="article_id_from">article_id</TD>
+                </TR>
+            
+            </TABLE>
+        >];
+        
+tags [label=<
+            <TABLE BORDER="0" CELLSPACING="0" CELLBORDER="1">
+                <TR>
+                    <TD COLSPAN="2"><B>tags</B></TD>
+                </TR>
+            
+                <TR>
+                    <TD PORT="id_to">🔑</TD>
+                    <TD PORT="id_from">id</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="name_to">&nbsp;</TD>
+                    <TD PORT="name_from">name</TD>
+                </TR>
+            
+            </TABLE>
+        >];
+        
+user_article_favorite [label=<
+            <TABLE BORDER="0" CELLSPACING="0" CELLBORDER="1">
+                <TR>
+                    <TD COLSPAN="2"><B>user_article_favorite</B></TD>
+                </TR>
+            
+                <TR>
+                    <TD PORT="user_id_to">🔑</TD>
+                    <TD PORT="user_id_from">user_id</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="article_id_to">🔑</TD>
+                    <TD PORT="article_id_from">article_id</TD>
+                </TR>
+            
+            </TABLE>
+        >];
+        
+user_follow [label=<
+            <TABLE BORDER="0" CELLSPACING="0" CELLBORDER="1">
+                <TR>
+                    <TD COLSPAN="2"><B>user_follow</B></TD>
+                </TR>
+            
+                <TR>
+                    <TD PORT="user_id_to">🔑</TD>
+                    <TD PORT="user_id_from">user_id</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="follow_id_to">🔑</TD>
+                    <TD PORT="follow_id_from">follow_id</TD>
+                </TR>
+            
+            </TABLE>
+        >];
+        
+users [label=<
+            <TABLE BORDER="0" CELLSPACING="0" CELLBORDER="1">
+                <TR>
+                    <TD COLSPAN="2"><B>users</B></TD>
+                </TR>
+            
+                <TR>
+                    <TD PORT="id_to">🔑</TD>
+                    <TD PORT="id_from">id</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="username_to">&nbsp;</TD>
+                    <TD PORT="username_from">username</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="email_to">&nbsp;</TD>
+                    <TD PORT="email_from">email</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="password_to">&nbsp;</TD>
+                    <TD PORT="password_from">password</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="bio_to">&nbsp;</TD>
+                    <TD PORT="bio_from">bio</TD>
+                </TR>
+            
+
+                <TR>
+                    <TD PORT="image_to">&nbsp;</TD>
+                    <TD PORT="image_from">image</TD>
+                </TR>
+            
+            </TABLE>
+        >];
+        
+comments:article_id_from:e -> articles:id_to:w
+comments:author_id_from:e -> users:id_to:w
+user_follow:follow_id_from:e -> users:id_to:w
+user_follow:user_id_from:e -> users:id_to:w
+user_article_favorite:article_id_from:e -> articles:id_to:w
+user_article_favorite:user_id_from:e -> users:id_to:w
+articles:author_id_from:e -> users:id_to:w
+article_tag:tag_id_from:e -> tags:id_to:w
+article_tag:article_id_from:e -> articles:id_to:w
+
+}
