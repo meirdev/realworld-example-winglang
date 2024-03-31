@@ -64,7 +64,7 @@ CREATE VIEW IF NOT EXISTS articles_view AS
   LEFT JOIN users AS author ON (author.id = articles.author_id)
   LEFT JOIN article_tag ON (article_tag.article_id = articles.id)
   LEFT JOIN tags ON (tags.id = article_tag.tag_id)
-  GROUP BY articles.id
+  GROUP BY articles.id;
 
 CREATE VIEW IF NOT EXISTS comments_view AS
   SELECT
@@ -75,4 +75,4 @@ CREATE VIEW IF NOT EXISTS comments_view AS
       'image', author.image
     ) AS author_
   FROM comments
-  LEFT JOIN users AS author ON (author.id = comments.author_id)
+  LEFT JOIN users AS author ON (author.id = comments.author_id);
